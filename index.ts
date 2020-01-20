@@ -1,1 +1,2 @@
-console.log("Hello World");
+const Game = require("./scripts/game");
+Game.run();
