@@ -1,3 +1,5 @@
+const faker = require('faker')
+
 namespace Objects {
     
     export class Battler{
@@ -6,8 +8,8 @@ namespace Objects {
         vit: number    
         atk: number
         
-        constructor(name: string = "unnamed"){
-            this.name = name
+        constructor(){
+            this.name = faker.name.findName()
             this.spd = 12
             this.vit = 12
             this.atk = 12

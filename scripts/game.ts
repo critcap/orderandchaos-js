@@ -1,52 +1,71 @@
 import Objects = require('./objects')
 
 const PARTY_SIZE: number = 3;
-var $dataNames: Array<String>;
+const TICK_RATE: number = 20;
+const hrtimeMs = function() {
+    let time = process.hrtime();
+    return time[0] * 1000 / TICK_RATE
+}
+
+const readline = require('readline')
+
+var rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+//const readline = require('readline-sync')
 
 class Game {
-    static _connected: boolean;
-
+    private static _previousTick = hrtimeMs()
+    private static _tick = 0;
+    private static _tickLengthMs = 1000/TICK_RATE
+    
+    static control: number = 0
+    static message: string = "hallo"
+    static inputing: boolean = false
     static actors: Array<Objects.Battler>
     static enemies: Array<Objects.Battler>
 
     static run(): void {
-        //check internet connection
-        this.loadNameDatabase()
-        this.createParties()
-        this.clearScreen()
+        // this.loadNameDatabase()
+        // this.createParties()
+        // this.clearScreen()
         this.requestInput()
         this.requestUpdate()
+        
+    }
+
+    static update(delta:number): void {
+        console.log(this.message);
+        
+    }
+
+
+    static requestUpdate(): void {
+        if(this.control >= 100) {
+            this.shutdown()
+        }
+        setTimeout(() => this.requestUpdate(), this._tickLengthMs)
+        let now = hrtimeMs()
+        let delta = (now - this._previousTick) / 1000
+        //if(delta > 0){
+        this.update(delta);//}
+        this._previousTick = now
+        this._tick++
+        this.control++
     }
 
     static requestInput(): void {
-        if(!process.stdin.isTTY){
-            
+        if(!this.isInputActive()){
+            rl.question("blalalsaldalsda", (answer: any) => {
+                this.message = "penis"
+                rl.close()
+            })
         }
     }
 
-    static shutdown(): void {
-        process.exit()
-    }
-
-    static clearScreen(): void {
-
-    }
-
-    static clearManager(): void {
-
-    }
-
-    static reset(): void {
-
-    }
-
-    static requestUpdate(): void {
-
-    }
-
-    static loadNameDatabase(): void {
-        //load name list from the internet
-        $dataNames = ["Peter", "Franz", "Jürgen"]
+    static isInputActive(): boolean {
+        return this.inputing
     }
 
     static createParties(): void {
@@ -61,6 +80,66 @@ class Game {
         }
         return party
     }
+
+    static clearScreen(): void {
+
+    }
+
+    static clearManager(): void {
+
+    }
+
+    static reset(): void {
+
+    }
+
+    static shutdown(): void {
+        process.exit()
+    }
+}
+
+class Battle{
+    static status: string = "start"
+    static turnCount: number = 0
+    static turnQueue: Array<number>
+
+    static isBusy(): boolean {
+        return false
+    }
+    
+    static update(): void {
+        if(!this.isBusy()){
+            this.updateTurn()
+        }
+    }
+    static setup(): void {
+
+    }
+
+    static createTurnOrder(): void {
+
+    }
+
+    static startBattle(): void {
+        this.status = "start"
+    }
+
+    static updateTurn(): void {
+        switch (this.status) {
+            case 'start':
+                break;
+            case 'turnStart':
+                break;
+            case 'input':
+                break;
+            case 'turnEnd':
+                break;
+            case 'End':
+                break;   
+            default:  break    
+        }
+    }
+
 }
 
 export = Game
