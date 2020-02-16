@@ -11,8 +11,8 @@ namespace Objects {
         constructor(){
             this.name = faker.name.findName()
             this.spd = Math.floor((Math.random() * 32) + 32)
-            this.vit = Math.floor((Math.random() * 64)+32)
-            this.atk = Math.floor((Math.random() * 64)+32)
+            this.vit = Math.floor((Math.random() * 64) + 32)
+            this.atk = Math.floor((Math.random() * 32) + 32)
         }
 
         update(): void {
@@ -34,6 +34,7 @@ namespace Objects {
             this.spd = data.spd 
             this.vit = data.vit 
             this.atk = data.atk 
+            //@ts-ignore
             this.qt = null
             this.alive = this.checkLifeStatus(data)
         }

@@ -155,6 +155,12 @@ class Battle {
         return this.heroes.concat(this.enemies)
     }
 
+    static getAllAliveBattlers(): Array<Objects.Battler> {
+        return this.getAllBattlers().filter(battler => {
+            return battler.alive == true
+        })
+    }
+
     static checkQueueTime(): boolean {
         let noqt = this.getAllBattlers().filter(battler => {
             return battler.qt == null
@@ -166,11 +172,11 @@ class Battle {
         let deadHeroes = this.heroes.filter(hero => {
             hero.alive == false
         });
-        (deadHeroes.length > 0)? this.processDefeat() : null;
+        (deadHeroes.length == this.heroes.length)? this.processDefeat() : null;
         let deadEnemies = this.enemies.filter(enemy => {
             enemy.alive == false
         });
-        (deadEnemies.length > 0)? this.processVictory() : null;
+        (deadEnemies.length == this.enemies.length)? this.processVictory() : null;
     }
 
     static initBattlersQueueTime(): void {
@@ -198,15 +204,16 @@ class Battle {
                 this.onStart()
                 break;
             case 'turnStart':
-                console.log(`Its ${this.activeBattler.name}'s turn`);
+                console.log(`Its ${this.getActiveBattler().name}'s turn`);
                 this.status = 'input'
                 break;
             case 'input':
                 Game.requestInput("Attack?")
+                this.processAttack()
                 this.status = 'turnEnd'
                 break;
             case 'turnEnd':
-                this.activeBattler.qt = this.activeBattler.spd +1
+                this.getActiveBattler().qt = this.getActiveBattler().spd +1
                 this.activeBattler = this.getNextBattler()
                 this.status = 'turnStart'
                 break;
@@ -216,24 +223,70 @@ class Battle {
             
         }
     }
-
+    static getActiveBattler(): Objects.Battler {
+        if(!this.activeBattler) this.activeBattler = this.getNextBattler()
+        return this.activeBattler
+    }
     static getNextBattler(): Objects.Battler{
 
-        let qt = this.getAllBattlers().sort((a, b) => a.qt - b.qt)
+        let qt = this.getAllAliveBattlers().sort((a, b) => a.qt - b.qt)
         let qtqt = qt[0].qt
-        this.getAllBattlers().forEach(ele =>{
+        this.getAllAliveBattlers().forEach(ele =>{
             ele.qt -= qtqt
-            console.log(ele.qt, qtqt;
-            
         })
+        qt[0].qt = -1;
 
         return qt[0]
 
     }
 
     static processAttack(): void {
+        let attacker: Objects.Battler = this.getActiveBattler()
+        let target: Objects.Battler = this.getAttackTarget(this.getBattlerOpponents(attacker))
 
+        if(target.vit <= attacker.atk) {
+            target.vit = 0
+            target.alive = false
+            console.log(`${attacker.name} defeats ${target.name}`);
+            let opponents = this.getBattlerOpponents(attacker)
+            if(this.checkIfDefeated(opponents)) {
+                if(opponents == this.heroes) {
+                    this.processDefeat()
+                }
+                if(opponents == this.enemies) {
+                    this.processVictory()
+                }
+            }
+        }
+        else {        
+            target.vit -= attacker.atk
+            console.log(`${attacker.name} deals ${attacker.atk} damage to ${target.name}`);
+        }     
     }
+
+    static checkIfDefeated(group: Array<Objects.Battler>): boolean {
+        let alive = group.filter(ele => {
+            return ele.alive == true;
+        })
+        return (alive.length === 0) ? true : false ;
+    }
+
+    static getBattlerFriends(battler: Objects.Battler): Array<Objects.Battler> {
+        return (this.heroes.includes(battler)) ? this.heroes : this.enemies;
+    }     
+    
+    static getBattlerOpponents(battler: Objects.Battler): Array<Objects.Battler> {
+        return (this.heroes.includes(battler)) ? this.enemies : this.heroes;
+    }
+
+    static getAttackTarget(group: Array<Objects.Battler>): Objects.Battler {
+        let validTargets = group.filter(ele => {
+            return ele.alive === true
+        })
+        return validTargets[Math.floor((Math.random() * validTargets.length))];
+    }
+
+
 
     static processVictory(): void {
         console.log('Your Group was Victorious');
