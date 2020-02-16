@@ -24,16 +24,13 @@ class Game {
     static enemies: Array<Objects.Character>
 
     static run(): void {
-        this.createGroup()
-        //Battle.setup()
+        this.heroes = this.createCharacter(PARTY_SIZE)
+        this.enemies = this.createCharacter(PARTY_SIZE)
+        Battle.setup()
         this.requestUpdate()
     }
 
     static update(): void {
-        if(this.onetime == true){
-            Battle.setup()
-            this.onetime = false
-        }
         if(Battle.status !== 'standby'){
             Battle.updateTurn()
         }
@@ -62,17 +59,8 @@ class Game {
         }
     }
 
-    static startInput(): void {
-        
-    }
-
     static isInputActive(): boolean {
         return this.inputing
-    }
-
-    static createGroup(): void {
-        this.heroes = this.createCharacter(PARTY_SIZE)
-        this.enemies = this.createCharacter(PARTY_SIZE)
     }
 
     static createCharacter(size: number): Array<Objects.Character> {
@@ -103,27 +91,18 @@ class Game {
 class Battle {
     static status: string = "standby"
     static turnCount: number = 0
-    static turnQueue: Array<number>
-    static activeBattler?: Objects.Battler
-
-    static heroes: Array<Objects.Battler>
-    static enemies: Array<Objects.Battler>
+    static activeBattler?: Objects.Battler 
+    static heroes: Array<Objects.Battler> = []
+    static enemies: Array<Objects.Battler> = []
 
     static isBusy(): boolean {
         return false
     }
 
     static setup(): void {
-        this.turnCount = 0
-        this.turnQueue = []
-        this.heroes = []
-        this.enemies = []
-        this.activeBattler = undefined
-        this.status = "setup"
-        
+        this.status = "setup"   
         this.createBattlers();
         this.initBattlersQueueTime()
-        this.checkBattlersAlive()
         this.start()
     }
 
@@ -136,21 +115,6 @@ class Battle {
         })
     }
 
-    static getTurnOrder(): string{
-        if(!this.checkQueueTime()) this.initBattlersQueueTime()
-        //@ts-ignore
-        let qt = this.getAllBattlers().sort((a, b) => a.qt - b.qt)
-        qt.map(ele => {
-            `${ele.name} ${ele.qt}`
-        })
-        let qto: string = ""
-        qt.forEach(ele => {
-            qto = qto + ele.name + ' ' + ele.spd + ' ' + ele.qt + "; "
-        })
-        return qto
-        
-    }
-
     static getAllBattlers(): Array<Objects.Battler> {
         return this.heroes.concat(this.enemies)
     }
@@ -159,24 +123,6 @@ class Battle {
         return this.getAllBattlers().filter(battler => {
             return battler.alive == true
         })
-    }
-
-    static checkQueueTime(): boolean {
-        let noqt = this.getAllBattlers().filter(battler => {
-            return battler.qt == null
-        })
-        return (noqt.length > 0)? false: true 
-    }
-
-    static checkBattlersAlive(): void{
-        let deadHeroes = this.heroes.filter(hero => {
-            hero.alive == false
-        });
-        (deadHeroes.length == this.heroes.length)? this.processDefeat() : null;
-        let deadEnemies = this.enemies.filter(enemy => {
-            enemy.alive == false
-        });
-        (deadEnemies.length == this.enemies.length)? this.processVictory() : null;
     }
 
     static initBattlersQueueTime(): void {
@@ -223,12 +169,13 @@ class Battle {
             
         }
     }
+
     static getActiveBattler(): Objects.Battler {
         if(!this.activeBattler) this.activeBattler = this.getNextBattler()
         return this.activeBattler
     }
-    static getNextBattler(): Objects.Battler{
 
+    static getNextBattler(): Objects.Battler{
         let qt = this.getAllAliveBattlers().sort((a, b) => a.qt - b.qt)
         let qtqt = qt[0].qt
         this.getAllAliveBattlers().forEach(ele =>{
@@ -285,8 +232,6 @@ class Battle {
         })
         return validTargets[Math.floor((Math.random() * validTargets.length))];
     }
-
-
 
     static processVictory(): void {
         console.log('Your Group was Victorious');
