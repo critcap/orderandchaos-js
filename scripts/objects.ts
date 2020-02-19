@@ -7,12 +7,20 @@ namespace Objects {
         spd: number
         vit: number    
         atk: number
+        hp: number
+        exp?: number
+        lvl?: number
         
-        constructor(){
-            this.name = faker.name.findName()
-            this.spd = Math.floor((Math.random() * 32) + 32)
-            this.vit = Math.floor((Math.random() * 64) + 32)
-            this.atk = Math.floor((Math.random() * 32) + 32)
+        constructor(name?: string){
+            this.name = (name)? name : faker.name.findName()
+            this.spd = Math.floor((Math.random() * 16) + 8)
+            this.vit = Math.floor((Math.random() * 16) + 8) * 10
+            this.atk = Math.floor((Math.random() * 16) + 8)
+            this.hp = this.vit
+            
+            this.exp = (this instanceof Hero)? 0 : undefined;
+            this.lvl = (this instanceof Hero)? 1 : undefined;
+
         }
 
         update(): void {
@@ -25,7 +33,8 @@ namespace Objects {
         spd: number
         vit: number
         atk: number
-        
+        hp: number
+
         qt: number
         alive: boolean
 
@@ -34,6 +43,7 @@ namespace Objects {
             this.spd = data.spd 
             this.vit = data.vit 
             this.atk = data.atk 
+            this.hp = data.hp
             //@ts-ignore
             this.qt = null
             this.alive = this.checkLifeStatus(data)
@@ -44,22 +54,10 @@ namespace Objects {
         }
     }
 
-    export class SceneBattle{
-        constructor(){
+    export class Hero extends Battler {
 
-        }
-        start(): void {
-
-        }
-
-        update(): void {
-
-        }
-
-        end(): void {
-
-        }
     }
+
 }
 
 export = Objects

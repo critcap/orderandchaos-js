@@ -1,8 +1,9 @@
 import Objects = require('./objects')
 
+
 const ATTACK_TIME = 50;
 const PARTY_SIZE: number = 2;
-const TICK_RATE: number = 60;
+const TICK_RATE: number = 20;
 const hrtimeMs = function () {
     let time = process.hrtime();
     return time[0] * 1000 / TICK_RATE
@@ -14,18 +15,15 @@ class Game {
     private static _previousTick = hrtimeMs()
     private static _tick = 0;
     private static _tickLengthMs = 1000 / TICK_RATE
+    private static control: number = 0
 
-    static onetime: boolean = true
-
-    static control: number = 0
-    static message: string = "hallo"
     static inputing: boolean = false
-    static heroes: Array<Objects.Character>
-    static enemies: Array<Objects.Character>
+    static heroes: Array<Objects.Character> = []
+    static enemies: Array<Objects.Character> = []
 
     static run(): void {
-        this.heroes = this.createCharacter(PARTY_SIZE)
-        this.enemies = this.createCharacter(PARTY_SIZE)
+        this.createHeroes()
+        this.createEncounter()
         Battle.setup()
         this.requestUpdate()
     }
@@ -36,9 +34,21 @@ class Game {
         }
     }
 
+    static createHeroes(): void {
+        for (let i = 1; i <= PARTY_SIZE; i++) {
+            let name: string = this.requestInput(`Whats the Name of the ${i}. Hero?`) 
+            this.heroes.push(new Objects.Character(name))
+        } 
+    }
+
+    static createEncounter(): void {
+        for (let i = 1; i <= PARTY_SIZE; i++) {
+            this.enemies.push(new Objects.Character())       
+        }
+    }
 
     static requestUpdate(): void {
-        if (this.control >= 40) this.shutdown()
+        if (this.control >= 400) this.shutdown()
         setTimeout(() => this.requestUpdate(), this._tickLengthMs)
         let now = hrtimeMs()
         let delta = (now - this._previousTick) / 1000
@@ -50,33 +60,17 @@ class Game {
         }
     }
 
-    static requestInput(message: string): void {
+    static requestInput(message: string): any {
         if (!this.isInputActive()) {
             this.inputing = true
             let input = readline.question(message)
             this.inputing = false;
-
+            return input
         }
     }
 
     static isInputActive(): boolean {
         return this.inputing
-    }
-
-    static createCharacter(size: number): Array<Objects.Character> {
-        let party = []
-        for (let i = 0; i < size; i++) {
-            party.push(new Objects.Character())
-        }
-        return party
-    }
-
-    static clearManager(): void {
-
-    }
-
-    static reset(): void {
-
     }
 
     static output(...message: any): void {
@@ -88,8 +82,9 @@ class Game {
     }
 }
 
+
 class Battle {
-    static status: string = "standby"
+    static status: string = ''
     static turnCount: number = 0
     static activeBattler?: Objects.Battler 
     static heroes: Array<Objects.Battler> = []
@@ -99,11 +94,23 @@ class Battle {
         return false
     }
 
+    static requestBattle(): void {
+        if(this.status = '') this.setup();
+        return 
+    }
+
+    static inProgress(): boolean {
+        return (this.status === '')? false : true;
+    }
+
     static setup(): void {
-        this.status = "setup"   
+        this.turnCount = 0
+        this.heroes = []
+        this.enemies = []
+        this.activeBattler = undefined
         this.createBattlers();
-        this.initBattlersQueueTime()
-        this.start()
+
+        this.status = 'start'
     }
 
     static createBattlers(): void {
@@ -129,9 +136,6 @@ class Battle {
         this.getAllBattlers().forEach(battler => {
             battler.qt = battler.spd
         })
-    }
-    static start(): void {
-        this.status = "start"
     }
 
     static onStart(): void {
@@ -163,12 +167,30 @@ class Battle {
                 this.activeBattler = this.getNextBattler()
                 this.status = 'turnStart'
                 break;
-            case 'End':
+            case 'cleanup':
+                this.afterBattleCleanUp()
                 break;
             default: console.log("default");
             
         }
     }
+
+    static onTurnStart(): void {
+        
+    }
+    static onPhaseStart(): void {
+
+    }
+    static onActionSelect(): void {
+
+    }
+    static onPhaseEnd(): void {
+
+    }
+    static onTurnEnd(): void {
+
+    }
+    static onBattleEnd(): void {}
 
     static getActiveBattler(): Objects.Battler {
         if(!this.activeBattler) this.activeBattler = this.getNextBattler()
@@ -188,8 +210,11 @@ class Battle {
     }
 
     static processAttack(): void {
-        let attacker: Objects.Battler = this.getActiveBattler()
-        let target: Objects.Battler = this.getAttackTarget(this.getBattlerOpponents(attacker))
+        let attacker: Objects.Battler = this.getActiveBattler();
+        let target: Objects.Battler = this.getAttackTarget(this.getBattlerOpponents(attacker));
+        let damage: number = attacker.atk;
+        let critical: boolean = this.isCriticalHit(); 
+        (critical)? damage *= 2: null;
 
         if(target.vit <= attacker.atk) {
             target.vit = 0
@@ -205,10 +230,18 @@ class Battle {
                 }
             }
         }
+        else if(critical){
+            target.vit -= damage
+            console.log(`${attacker.name} CRITICALLY strikes ${target.name} for ${damage}`);
+        } 
         else {        
-            target.vit -= attacker.atk
-            console.log(`${attacker.name} deals ${attacker.atk} damage to ${target.name}`);
+            target.vit -= damage
+            console.log(`${attacker.name} deals ${damage} damage to ${target.name}`);
         }     
+    }
+
+    static isCriticalHit(): boolean {
+        return Math.random() < 0.2
     }
 
     static checkIfDefeated(group: Array<Objects.Battler>): boolean {
@@ -243,12 +276,16 @@ class Battle {
         this.close()
         
     }
+
+    static afterBattleCleanUp(): void {
+
+    }
+
     static close(): void {
         this.status = "standby"
         Game.shutdown()
     }
 
 }
-
 
 export = Game
