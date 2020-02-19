@@ -1,6 +1,6 @@
 import Objects = require('./objects')
 
-
+const term = require('terminal-kit').terminal
 const ATTACK_TIME = 50;
 const PARTY_SIZE: number = 2;
 const TICK_RATE: number = 20;
@@ -22,10 +22,14 @@ class Game {
     static enemies: Array<Objects.Character> = []
 
     static run(): void {
-        this.createHeroes()
-        this.createEncounter()
-        Battle.setup()
-        this.requestUpdate()
+        // this.createHeroes()
+        // this.createEncounter()
+        // Battle.setup()
+        // this.requestUpdate()
+        term.singleColumnMenu(['hallo', 'world'], (error: any, response: any) => {
+            console.log(response.selectedText);
+            
+        })
     }
 
     static update(): void {
