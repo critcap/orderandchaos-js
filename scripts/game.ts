@@ -9,6 +9,8 @@ const hrtimeMs = function () {
     return time[0] * 1000 / TICK_RATE
 }
 
+const clear = require('clear')
+
 const readline = require('readline-sync')
 
 class Game {
@@ -26,10 +28,15 @@ class Game {
         // this.createEncounter()
         // Battle.setup()
         // this.requestUpdate()
-        term.singleColumnMenu(['hallo', 'world'], (error: any, response: any) => {
-            console.log(response.selectedText);
+        clear()
+        let x = 1
+        term.singleColumnMenu(['hasdasd', 'asdasdas', x], (error:any, response:any) => {
+            console.log(response);
             
         })
+        x++
+        console.log('hehehe');
+        
     }
 
     static update(): void {
@@ -52,7 +59,7 @@ class Game {
     }
 
     static requestUpdate(): void {
-        if (this.control >= 400) this.shutdown()
+        if (this.control >= 100) this.shutdown()
         setTimeout(() => this.requestUpdate(), this._tickLengthMs)
         let now = hrtimeMs()
         let delta = (now - this._previousTick) / 1000
