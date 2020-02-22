@@ -1,6 +1,7 @@
 "use strict";
-const Objects = require("./objects");
-const Scenes = require("./scenes");
+Object.defineProperty(exports, "__esModule", { value: true });
+const objects_1 = require("./objects");
+const scenes_1 = require("./scenes");
 const Graphics = require('terminal-kit').terminal;
 const ATTACK_TIME = 50;
 const PARTY_SIZE = 2;
@@ -15,7 +16,7 @@ class Game {
         Graphics.clear();
         this.createHeroes();
         this.createEncounter();
-        let x = new Scenes.Scene();
+        let x = new scenes_1.Scenes.Scene();
         Battle.setup();
         this.requestUpdate();
     }
@@ -28,12 +29,12 @@ class Game {
     static createHeroes() {
         for (let i = 1; i <= PARTY_SIZE; i++) {
             let name = this.requestInput(`Whats the Name of the ${i}. Hero?`);
-            this.heroes.push(new Objects.Character(name));
+            this.heroes.push(new objects_1.Objects.Character(name));
         }
     }
     static createEncounter() {
         for (let i = 1; i <= PARTY_SIZE; i++) {
-            this.enemies.push(new Objects.Character());
+            this.enemies.push(new objects_1.Objects.Character());
         }
     }
     static requestUpdate() {
@@ -64,6 +65,7 @@ class Game {
         process.exit();
     }
 }
+exports.Game = Game;
 Game._previousTick = hrtimeMs();
 Game._tick = 0;
 Game._tickLengthMs = 1000 / TICK_RATE;
@@ -93,10 +95,10 @@ class Battle {
     }
     static createBattlers() {
         Game.heroes.forEach(hero => {
-            this.heroes.push(new Objects.Battler(hero));
+            this.heroes.push(new objects_1.Objects.Battler(hero));
         });
         Game.enemies.forEach(enemie => {
-            this.enemies.push(new Objects.Battler(enemie));
+            this.enemies.push(new objects_1.Objects.Battler(enemie));
         });
     }
     static getAllBattlers() {
@@ -250,4 +252,4 @@ Battle.status = '';
 Battle.turnCount = 0;
 Battle.heroes = [];
 Battle.enemies = [];
-module.exports = Game;
+//export = Game

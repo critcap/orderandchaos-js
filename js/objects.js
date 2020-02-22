@@ -1,4 +1,5 @@
 "use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
 const faker = require('faker');
 var Objects;
 (function (Objects) {
@@ -46,5 +47,5 @@ var Objects;
         }
     }
     Objects.Skill = Skill;
-})(Objects || (Objects = {}));
-module.exports = Objects;
+})(Objects = exports.Objects || (exports.Objects = {}));
+//export = Objects

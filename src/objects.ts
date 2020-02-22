@@ -1,8 +1,8 @@
 const faker = require('faker')
 
-namespace Objects {
+export namespace Objects {
     
-    interface Data_Skill {
+    export interface Data_Skill {
         id: number
         name: number
         power: number
@@ -88,4 +88,4 @@ namespace Objects {
     }
 }
 
-export = Objects
+//export = Objects
