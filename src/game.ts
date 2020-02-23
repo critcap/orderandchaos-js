@@ -23,6 +23,9 @@ export class Game {
     static heroes: Array<Objects.Character> = []
     static enemies: Array<Objects.Character> = []
 
+    static timeToWait: number = 0;
+    static stopped: boolean = false;
+
     static run(): void {
         Graphics.clear()
         
@@ -59,7 +62,7 @@ export class Game {
         let delta = (now - this._previousTick) / 1000
         this._previousTick = now
         this._tick++
-        if (!this.isInputActive()) {
+        if (!this.isStopped()) {
             this.update();
         }
     }
@@ -77,7 +80,16 @@ export class Game {
         return this.inputing
     }
 
-    
+    static isWaiting(): boolean {
+        return this.timeToWait > 0
+    }
+
+    static isStopped(): boolean {
+        if(this.isInputActive()) return true;
+        if(this.isWaiting()) return true;
+        return false;
+    }
+   
     static shutdown(): void {
         process.exit()
     }

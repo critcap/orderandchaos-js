@@ -3,6 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const game_1 = require("./game");
 const objects_1 = require("./objects");
 const game_2 = require("./game");
+const ATTACK = { id: 1, name: 'Attack', formular: eval(`1 * this.battler.wdamage()`), rt: 50, cost: 0, tooltip: '' };
 class Battle {
     static isBusy() {
         return false;
@@ -89,6 +90,7 @@ class Battle {
         this.nextTurn();
     }
     static onTurnStart() {
+        //check buff/debuffs
     }
     static onPhaseStart() {
     }
@@ -183,3 +185,4 @@ Battle.status = '';
 Battle.turnCount = 0;
 Battle.heroes = [];
 Battle.enemies = [];
+Battle.stack = [];

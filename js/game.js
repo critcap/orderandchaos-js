@@ -44,7 +44,7 @@ class Game {
         let delta = (now - this._previousTick) / 1000;
         this._previousTick = now;
         this._tick++;
-        if (!this.isInputActive()) {
+        if (!this.isStopped()) {
             this.update();
         }
     }
@@ -59,6 +59,16 @@ class Game {
     static isInputActive() {
         return this.inputing;
     }
+    static isWaiting() {
+        return this.timeToWait > 0;
+    }
+    static isStopped() {
+        if (this.isInputActive())
+            return true;
+        if (this.isWaiting())
+            return true;
+        return false;
+    }
     static shutdown() {
         process.exit();
     }
@@ -71,4 +81,6 @@ Game.control = 0;
 Game.inputing = false;
 Game.heroes = [];
 Game.enemies = [];
+Game.timeToWait = 0;
+Game.stopped = false;
 //export = Game

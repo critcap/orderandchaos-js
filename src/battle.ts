@@ -2,12 +2,15 @@ import {Game} from './game'
 import {Objects} from './objects'
 import {Graphics} from './game'
 
+const ATTACK: Objects.Skill = {id: 1, name: 'Attack', formular: eval(`1 * this.battler.wdamage()`), rt: 50, cost: 0, tooltip: ''}
+
 export class Battle {
     static status: string = ''
     static turnCount: number = 0
     static activeBattler?: Objects.Battler 
     static heroes: Array<Objects.Battler> = []
     static enemies: Array<Objects.Battler> = []
+    static stack: Array<Objects.Skill> = []
 
     static isBusy(): boolean {
         return false
@@ -109,7 +112,7 @@ export class Battle {
      }
 
     static onTurnStart(): void {
-        
+        //check buff/debuffs
     }
     static onPhaseStart(): void {
 

@@ -4,7 +4,7 @@ export namespace Objects {
     
     export interface Data_Skill {
         id: number
-        name: number
+        name: string
         power: number
         rt: number
         cost: number
@@ -71,19 +71,23 @@ export namespace Objects {
 
     export class Skill {
         id: number
-        name: number
-        power: number
+        name: string
+        formular: number
         rt: number
         cost: number
         tooltip: string
+        battler?: Battler
+        target?: Battler
 
-        constructor(data: Data_Skill){
+        constructor(data: Data_Skill, battler: Battler, target: Battler){
             this.id = data.id
             this.name = data.name
-            this.power = data.power
+            this.formular = data.power
             this.rt = data.rt
             this.cost = data.cost
             this.tooltip = data.tooltip
+            this.battler = battler;
+            this.target = target
         }
     }
 }

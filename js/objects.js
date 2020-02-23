@@ -37,13 +37,15 @@ var Objects;
     }
     Objects.Hero = Hero;
     class Skill {
-        constructor(data) {
+        constructor(data, battler, target) {
             this.id = data.id;
             this.name = data.name;
-            this.power = data.power;
+            this.formular = data.power;
             this.rt = data.rt;
             this.cost = data.cost;
             this.tooltip = data.tooltip;
+            this.battler = battler;
+            this.target = target;
         }
     }
     Objects.Skill = Skill;
