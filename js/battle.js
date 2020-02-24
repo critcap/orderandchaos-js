@@ -14,13 +14,14 @@ class Battle {
         this.activeBattler = undefined;
         this.createBattlers();
         this.status = 'start';
+
     }
     static createBattlers() {
         game_1.Game.heroes.forEach(hero => {
-            this.heroes.push(new objects_1.Objects.Battler(hero));
+            this.heroes.push(new objects_1.Objects.Hero(hero));
         });
         game_1.Game.enemies.forEach(enemie => {
-            this.enemies.push(new objects_1.Objects.Battler(enemie));
+            this.enemies.push(new objects_1.Objects.Enemy(enemie));
         });
     }
     static getAllBattlers() {
@@ -61,8 +62,7 @@ class Battle {
     }
     static async startInput() {
         this.status = 'input';
-        //this.openCommandSelection()
-        let command = await game_2.Graphics.singleLineMenu(['Attack', 'Guard']).promise;
+        let command = 1//await game_2.Graphics.singleLineMenu(['Attack', 'Guard']).promise;
         let action = new objects_1.Objects.Action(this.getActiveBattler(), command.selectedIndex);
         let targets = await action.getTargets();
         action.setTargets(targets);
@@ -72,9 +72,6 @@ class Battle {
     static onStart() {
         this.activeBattler = this.getNextBattler();
         this.nextTurn();
-    }
-    static onTurnStart() {
-        //check buff/debuffs
     }
     static onPhaseStart() {
     }

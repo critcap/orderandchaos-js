@@ -88,31 +88,27 @@ export namespace Objects {
 
         constructor(user: Battler, id: number) {
             this.user = user
-            this.skill = this.fetchSkillFromID(id)
+            this.skill = new Skill(this.fetchSkillFromID(id))
             this.targets = []
             
         }
 
         fetchSkillFromID(id: number): Skill {
             //FIXME  Placeholder
-            let data: Skill
             switch (id) {
                 case 0:
-                    data = {id: 0, name: 'Attack', damage: {type: 1, formular: 'user.wdamage() * 1.0', element: 1, variance: 10}, rt: 50, scope: 1, cost: 0, costType: 'Mana', tooltip: ''}
+                    return {id: 0, name: 'Attack', damage: {type: 1, formular: 'user.wdamage() * 1.0', element: 1, variance: 10}, rt: 50, scope: 1, cost: 0, costType: 'Mana', tooltip: ''}
                     break;
             
                 default:
-                    data = {id: 1, name: 'Guard', damage: {type: 0, formular: '', element: 1, variance: 10}, rt: 25, scope: 0, cost: 0, costType: 'Mana', tooltip: ''}
+                    return {id: 1, name: 'Guard', damage: {type: 0, formular: '', element: 1, variance: 10}, rt: 25, scope: 0, cost: 0, costType: 'Mana', tooltip: ''}
                     break;
             }
-            return new Skill(data)
         }
         
         async getTargets(): Promise<Array<Battler>> {
             let possibleTargetsNames: Array<string> = this.getPossibleTargets().map(target => target.name)
             let targets = await this.openTargetSelection(possibleTargetsNames)   
-            console.log(targets);
-            
             return targets
         }
 
@@ -122,6 +118,7 @@ export namespace Objects {
 
         getPossibleTargets(): Array<Battler> {
             switch (this.skill.scope) {
+                //FIXME only 2 for testing
                 case 0:
                     return [this.user]
                     break;

@@ -29,10 +29,10 @@ export class Battle {
 
     static createBattlers(): void {
         Game.heroes.forEach(hero => {
-            this.heroes.push(new Objects.Battler(hero))
+            this.heroes.push(new Objects.Hero(hero))
         })
         Game.enemies.forEach(enemie => {
-            this.enemies.push(new Objects.Battler(enemie))
+            this.enemies.push(new Objects.Enemy(enemie))
         })
     }
 
@@ -79,7 +79,6 @@ export class Battle {
 
     static async startInput(): Promise<any> {
         this.status = 'input'
-        //this.openCommandSelection()
         let command = await Graphics.singleLineMenu(['Attack', 'Guard']).promise;   
         let action = new Objects.Action(this.getActiveBattler(), command.selectedIndex)
         let targets = await action.getTargets()
@@ -91,10 +90,6 @@ export class Battle {
     static onStart(): void {
         this.activeBattler = this.getNextBattler()
         this.nextTurn()
-     }
-
-    static onTurnStart(): void {
-        //check buff/debuffs
     }
     static onPhaseStart(): void {
 
