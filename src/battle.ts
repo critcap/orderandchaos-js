@@ -2,7 +2,6 @@ import {Game} from './game'
 import {Objects} from './objects'
 import {Graphics} from './game'
 
-const ATTACK: Objects.Skill = {id: 1, name: 'Attack', formular: eval(`1 * this.battler.wdamage()`), rt: 50, cost: 0, tooltip: ''}
 
 export class Battle {
     static status: string = ''
@@ -10,16 +9,9 @@ export class Battle {
     static activeBattler?: Objects.Battler 
     static heroes: Array<Objects.Battler> = []
     static enemies: Array<Objects.Battler> = []
+    private static actionQueue: Array<Objects.Action>
     static stack: Array<Objects.Skill> = []
 
-    static isBusy(): boolean {
-        return false
-    }
-
-    static requestBattle(): void {
-        if(this.status = '') this.setup();
-        return 
-    }
 
     static inProgress(): boolean {
         return (this.status === '')? false : true;
@@ -72,26 +64,7 @@ export class Battle {
                 break;
             case 'turnStart':
                 console.log(`Its ${this.getActiveBattler().name}'s turn`);
-                this.status = 'input'
-                break;
-            case 'input':
-                //Game.requestInput("Attack?")   
-                Game.inputing = true    
-
-                    Graphics.singleLineMenu(['Attack', 'Guard'], (error:any, response:any) => {
-                        if(response.selectedIndex === 0) {
-                            this.processAttack()
-                        }
-                        else {
-                            console.log(`${this.getActiveBattler().name} guards himself`);
-                            
-                        }
-                        this.status = 'turnEnd'
-                        Game.inputing = false
-                    })
-
-                //this.processAttack()
-                //this.status = 'turnEnd'
+                this.startInput()
                 break;
             case 'turnEnd':
                 this.getActiveBattler().qt = this.getActiveBattler().spd +1
@@ -100,11 +73,20 @@ export class Battle {
                 break;
             case 'cleanup':
                 this.afterBattleCleanUp()
-                break;
-            default: console.log("default");
-            
+                break;       
         }
     }
+
+    static async startInput(): Promise<any> {
+        this.status = 'input'
+        //this.openCommandSelection()
+        let command = await Graphics.singleLineMenu(['Attack', 'Guard']).promise;   
+        let action = new Objects.Action(this.getActiveBattler(), command.selectedIndex)
+        let targets = await action.getTargets()
+        action.setTargets(targets)
+        console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
+        this.status = 'turnEnd'
+    }    
 
     static onStart(): void {
         this.activeBattler = this.getNextBattler()

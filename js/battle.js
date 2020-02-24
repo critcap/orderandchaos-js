@@ -3,16 +3,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const game_1 = require("./game");
 const objects_1 = require("./objects");
 const game_2 = require("./game");
-const ATTACK = { id: 1, name: 'Attack', formular: eval(`1 * this.battler.wdamage()`), rt: 50, cost: 0, tooltip: '' };
 class Battle {
-    static isBusy() {
-        return false;
-    }
-    static requestBattle() {
-        if (this.status = '')
-            this.setup();
-        return;
-    }
     static inProgress() {
         return (this.status === '') ? false : true;
     }
@@ -56,23 +47,7 @@ class Battle {
                 break;
             case 'turnStart':
                 console.log(`Its ${this.getActiveBattler().name}'s turn`);
-                this.status = 'input';
-                break;
-            case 'input':
-                //Game.requestInput("Attack?")   
-                game_1.Game.inputing = true;
-                game_2.Graphics.singleLineMenu(['Attack', 'Guard'], (error, response) => {
-                    if (response.selectedIndex === 0) {
-                        this.processAttack();
-                    }
-                    else {
-                        console.log(`${this.getActiveBattler().name} guards himself`);
-                    }
-                    this.status = 'turnEnd';
-                    game_1.Game.inputing = false;
-                });
-                //this.processAttack()
-                //this.status = 'turnEnd'
+                this.startInput();
                 break;
             case 'turnEnd':
                 this.getActiveBattler().qt = this.getActiveBattler().spd + 1;
@@ -82,8 +57,17 @@ class Battle {
             case 'cleanup':
                 this.afterBattleCleanUp();
                 break;
-            default: console.log("default");
         }
+    }
+    static async startInput() {
+        this.status = 'input';
+        //this.openCommandSelection()
+        let command = await game_2.Graphics.singleLineMenu(['Attack', 'Guard']).promise;
+        let action = new objects_1.Objects.Action(this.getActiveBattler(), command.selectedIndex);
+        let targets = await action.getTargets();
+        action.setTargets(targets);
+        console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
+        this.status = 'turnEnd';
     }
     static onStart() {
         this.activeBattler = this.getNextBattler();

@@ -3,41 +3,31 @@ import {Scenes} from './scenes';
 import {Battle} from './battle'
 
 export const Graphics = require('terminal-kit').terminal
-const ATTACK_TIME = 50;
+
 const PARTY_SIZE: number = 2;
 const TICK_RATE: number = 20;
-const hrtimeMs = function () {
-    let time = process.hrtime();
-    return time[0] * 1000 / TICK_RATE
-}
-
-const readline = require('readline-sync')
+const hrtimeMs = function () {let time = process.hrtime(); return time[0] * 1000 / TICK_RATE}
 
 export class Game {
     private static _previousTick = hrtimeMs()
-    private static _tick = 0;
     private static _tickLengthMs = 1000 / TICK_RATE
-    private static control: number = 0
-
-    static inputing: boolean = false
+    private static _control: number = 0
+    private static _input: any = undefined
+    private static _timeToWait: number = 0;
+    
     static heroes: Array<Objects.Character> = []
     static enemies: Array<Objects.Character> = []
 
-    static timeToWait: number = 0;
-    static stopped: boolean = false;
-
     static run(): void {
         Graphics.clear()
-        
         this.createHeroes()
         this.createEncounter()
-        let x= new Scenes.Scene()
         Battle.setup()
         this.requestUpdate()       
     }
-
+    
     static update(): void {
-        (this.control >= 100)? this.shutdown(): this.control++
+        //(this._control >= 100)? this.shutdown(): this._control++
         if(Battle.status !== 'standby'){
             Battle.updateTurn()
         }
@@ -45,8 +35,7 @@ export class Game {
 
     static createHeroes(): void {
         for (let i = 1; i <= PARTY_SIZE; i++) {
-            let name: string = this.requestInput(`Whats the Name of the ${i}. Hero?`) 
-            this.heroes.push(new Objects.Character(name))
+            this.heroes.push(new Objects.Character())
         } 
     }
 
@@ -61,27 +50,32 @@ export class Game {
         let now = hrtimeMs()
         let delta = (now - this._previousTick) / 1000
         this._previousTick = now
-        this._tick++
         if (!this.isStopped()) {
             this.update();
         }
     }
 
-    static requestInput(message: string): any {
-        if (!this.isInputActive()) {
-            this.inputing = true
-            let input = readline.question(message)
-            this.inputing = false;
-            return input
+    static isInputActive(): boolean {
+        return (this._input)? true : false;
+    }
+
+    static openInput(input: any): void {
+        if(!this.isInputActive()) {
+            this._input = input;
+        }
+    }
+    static overrideInput(input: any): void {
+        if(this.isInputActive()) {
+            this._input = input
         }
     }
 
-    static isInputActive(): boolean {
-        return this.inputing
+    static closeInput(): void {
+        this._input = undefined
     }
 
     static isWaiting(): boolean {
-        return this.timeToWait > 0
+        return this._timeToWait > 0
     }
 
     static isStopped(): boolean {
