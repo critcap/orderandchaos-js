@@ -1,0 +1,6 @@
+{
+    "files.exclude": {
+        "**/.CVS": true,
+        "**/CVS": false
+    }
+}
