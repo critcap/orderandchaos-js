@@ -64,6 +64,10 @@ export namespace Objects {
             return new Action(this, id)
         }
 
+        isAlive(): boolean {
+           return this.vit > 0
+        }
+
         getFriends(): Array<Battler> {
             return (this instanceof Hero) ? Battle.heroes : Battle.enemies;
         }
@@ -108,8 +112,12 @@ export namespace Objects {
         
         async getTargets(): Promise<Array<Battler>> {
             let possibleTargetsNames: Array<string> = this.getPossibleTargets().map(target => target.name)
-            let targets = await this.openTargetSelection(possibleTargetsNames)   
-            return targets
+            let targets = await this.openTargetSelection(possibleTargetsNames) 
+            //console.log(targets[0].isAliv;
+            if(targets){
+                if(targets[0].isAlive()) return targets;
+                await this.getTargets()
+            }         
         }
 
         setTargets(targets: Array<Battler>): void {
@@ -133,6 +141,10 @@ export namespace Objects {
             //FIXME only single selection atm
             let name = await Graphics.gridMenu(names).promise;
             return [this.getPossibleTargets()[name.selectedIndex]]
+        }
+
+        async targetIsValid(): Promise<boolean> {
+           return this.targets[0].isAlive() == true
         }
 
     }

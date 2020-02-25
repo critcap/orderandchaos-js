@@ -9,13 +9,16 @@ Graphics.on('key', (name:any, data:any) => {
         case "z":
             Game.shutdown()
             break;
+        case "u":
+            Graphics.deleteLine(1)
+            break;
         
         default:
             break;
     }
     
 })
-const PARTY_SIZE: number = 2;
+const PARTY_SIZE: number = 3;
 const TICK_RATE: number = 20;
 const hrtimeMs = function () {let time = process.hrtime(); return time[0] * 1000 / TICK_RATE}
 
@@ -38,8 +41,7 @@ export class Game {
     }
     
     static update(): void {
-        //(this._control >= 100)? this.shutdown(): this._control++
-        if(Battle.status !== 'standby'){
+        if(Battle.inProgress()){
             Battle.updateTurn()
         }
     }

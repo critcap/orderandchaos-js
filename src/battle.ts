@@ -4,7 +4,7 @@ import {Graphics} from './game'
 
 
 export class Battle {
-    static status: string = ''
+    private static _status: string = ''
     static turnCount: number = 0
     static activeBattler?: Objects.Battler 
     static heroes: Array<Objects.Battler> = []
@@ -14,7 +14,7 @@ export class Battle {
 
 
     static inProgress(): boolean {
-        return (this.status === '')? false : true;
+        return this._status !== '';
     }
 
     static setup(): void {
@@ -24,7 +24,7 @@ export class Battle {
         this.activeBattler = undefined
         this.createBattlers();
 
-        this.status = 'start'
+        this._status = 'start'
     }
 
     static createBattlers(): void {
@@ -54,11 +54,11 @@ export class Battle {
 
     static nextTurn(): void {
         this.turnCount++
-        this.status = 'turnStart'
+        this._status = 'turnStart'
     }
 
     static updateTurn(): void {
-        switch (this.status) {
+        switch (this._status) {
             case 'start':
                 this.onStart()
                 break;
@@ -69,7 +69,7 @@ export class Battle {
             case 'turnEnd':
                 this.getActiveBattler().qt = this.getActiveBattler().spd +1
                 this.activeBattler = this.getNextBattler()
-                this.status = 'turnStart'
+                this._status = 'turnStart'
                 break;
             case 'cleanup':
                 this.afterBattleCleanUp()
@@ -78,7 +78,7 @@ export class Battle {
     }
 
     static async startInput(): Promise<any> {
-        this.status = 'input'
+        this._status = 'input'
         try {
             let command = await Graphics.singleLineMenu(['Attack', 'Guard']).promise;   
             let action = new Objects.Action(this.getActiveBattler(), command.selectedIndex)
@@ -150,7 +150,7 @@ export class Battle {
     static processAttack(): void {
         let attacker: Objects.Battler = this.getActiveBattler();
         let target: Objects.Battler = this.getAttackTarget(this.getBattlerOpponents(attacker));
-        let damage: number = attacker.atk;
+        let damage: number = attacker.atk * 1000;
         let critical: boolean = this.isCriticalHit(); 
         (critical)? damage *= 2: null;
 
@@ -171,12 +171,12 @@ export class Battle {
         else if(critical){
             target.vit -= damage
             console.log(`${attacker.name} CRITICALLY strikes ${target.name} for ${damage}`);
-            this.status = "turnEnd"
+            this._status = "turnEnd"
         } 
         else {        
             target.vit -= damage
             console.log(`${attacker.name} deals ${damage} damage to ${target.name}`);
-            this.status = "turnEnd"
+            this._status = "turnEnd"
         }     
     }
 
@@ -222,7 +222,7 @@ export class Battle {
     }
 
     static close(): void {
-        this.status = "standby"
+        this._status = "standby"
         Game.shutdown()
     }
 
