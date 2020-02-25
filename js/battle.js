@@ -14,7 +14,6 @@ class Battle {
         this.activeBattler = undefined;
         this.createBattlers();
         this.status = 'start';
-
     }
     static createBattlers() {
         game_1.Game.heroes.forEach(hero => {
@@ -62,12 +61,31 @@ class Battle {
     }
     static async startInput() {
         this.status = 'input';
-        let command = 1//await game_2.Graphics.singleLineMenu(['Attack', 'Guard']).promise;
-        let action = new objects_1.Objects.Action(this.getActiveBattler(), command.selectedIndex);
-        let targets = await action.getTargets();
-        action.setTargets(targets);
-        console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
-        this.status = 'turnEnd';
+        try {
+            let command = await game_2.Graphics.singleLineMenu(['Attack', 'Guard']).promise;
+            let action = new objects_1.Objects.Action(this.getActiveBattler(), command.selectedIndex);
+            let targets = await action.getTargets();
+            action.setTargets(targets);
+            //console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
+            this.startActionStack([action]);
+        }
+        catch (error) {
+            game_2.Graphics.clear();
+            console.log(error);
+            game_1.Game.shutdown();
+        }
+    }
+    static startActionStack(actions) {
+        this.actionStack = actions;
+        this.startActionProcess();
+    }
+    static startActionProcess() {
+        if (this.actionStack) {
+            let string = `3 ... 2 ... 1 ...`;
+            game_2.Graphics.slowTyping(string, { style: game_2.Graphics.white, flashStyle: false, delay: 100 }, (end) => {
+                this.processAttack();
+            });
+        }
     }
     static onStart() {
         this.activeBattler = this.getNextBattler();
@@ -119,10 +137,12 @@ class Battle {
         else if (critical) {
             target.vit -= damage;
             console.log(`${attacker.name} CRITICALLY strikes ${target.name} for ${damage}`);
+            this.status = "turnEnd";
         }
         else {
             target.vit -= damage;
             console.log(`${attacker.name} deals ${damage} damage to ${target.name}`);
+            this.status = "turnEnd";
         }
     }
     static isCriticalHit() {

@@ -3,7 +3,18 @@ import {Scenes} from './scenes';
 import {Battle} from './battle'
 
 export const Graphics = require('terminal-kit').terminal
-
+Graphics.grabInput(true)
+Graphics.on('key', (name:any, data:any) => {
+    switch (name) {
+        case "z":
+            Game.shutdown()
+            break;
+        
+        default:
+            break;
+    }
+    
+})
 const PARTY_SIZE: number = 2;
 const TICK_RATE: number = 20;
 const hrtimeMs = function () {let time = process.hrtime(); return time[0] * 1000 / TICK_RATE}
@@ -85,7 +96,7 @@ export class Game {
     }
    
     static shutdown(): void {
-        process.exit()
+        Graphics.processExit()
     }
 }
 

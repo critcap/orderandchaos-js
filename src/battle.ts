@@ -9,7 +9,7 @@ export class Battle {
     static activeBattler?: Objects.Battler 
     static heroes: Array<Objects.Battler> = []
     static enemies: Array<Objects.Battler> = []
-    private static actionQueue: Array<Objects.Action>
+    private static actionStack: Array<Objects.Action>
     static stack: Array<Objects.Skill> = []
 
 
@@ -79,14 +79,39 @@ export class Battle {
 
     static async startInput(): Promise<any> {
         this.status = 'input'
-        let command = await Graphics.singleLineMenu(['Attack', 'Guard']).promise;   
-        let action = new Objects.Action(this.getActiveBattler(), command.selectedIndex)
-        let targets = await action.getTargets()
-        action.setTargets(targets)
-        console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
-        this.status = 'turnEnd'
+        try {
+            let command = await Graphics.singleLineMenu(['Attack', 'Guard']).promise;   
+            let action = new Objects.Action(this.getActiveBattler(), command.selectedIndex)
+            let targets = await action.getTargets()
+            action.setTargets(targets)
+            //console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
+            this.startActionStack([action])
+        } catch (error) {
+            Graphics.clear()
+            console.log(error);
+            Game.shutdown()
+        }  
     }    
 
+    static startActionStack(actions: Array<Objects.Action>): void {
+        this.actionStack = actions
+        this.startActionProcess()
+    }
+
+    static startActionProcess(): void{
+        if(this.actionStack){
+            let string = `3 ... 2 ... 1 ...`
+            Graphics.slowTyping(string, {style: Graphics.white, flashStyle: false, delay: 100}, (end:any) => {
+                this.processAttack()   
+            });
+            
+            
+            
+            
+            
+        }
+    }
+    
     static onStart(): void {
         this.activeBattler = this.getNextBattler()
         this.nextTurn()
@@ -146,10 +171,12 @@ export class Battle {
         else if(critical){
             target.vit -= damage
             console.log(`${attacker.name} CRITICALLY strikes ${target.name} for ${damage}`);
+            this.status = "turnEnd"
         } 
         else {        
             target.vit -= damage
             console.log(`${attacker.name} deals ${damage} damage to ${target.name}`);
+            this.status = "turnEnd"
         }     
     }
 

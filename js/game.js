@@ -3,6 +3,16 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const objects_1 = require("./objects");
 const battle_1 = require("./battle");
 exports.Graphics = require('terminal-kit').terminal;
+exports.Graphics.grabInput(true);
+exports.Graphics.on('key', (name, data) => {
+    switch (name) {
+        case "z":
+            Game.shutdown();
+            break;
+        default:
+            break;
+    }
+});
 const PARTY_SIZE = 2;
 const TICK_RATE = 20;
 const hrtimeMs = function () { let time = process.hrtime(); return time[0] * 1000 / TICK_RATE; };
@@ -66,7 +76,7 @@ class Game {
         return false;
     }
     static shutdown() {
-        process.exit();
+        exports.Graphics.processExit();
     }
 }
 exports.Game = Game;
