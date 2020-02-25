@@ -1,7 +1,9 @@
 
 /js
+/src
 *.png
 *.gif
 *.jpg
 *.jpeg
+
 
