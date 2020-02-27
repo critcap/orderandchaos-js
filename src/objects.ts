@@ -1,88 +1,114 @@
 import { Game, Graphics } from "./game"
 import { Battle} from "./battle"
+import { Utils } from "./game"
+import { Random } from "./game"
 
-const faker = require('faker')
 
 export namespace Objects {
-    
 
-
-
-    export class Character{
-        name: string
-        spd: number
-        vit: number    
-        atk: number
-        hp: number
-        exp?: number
-        lvl?: number
-        
-        constructor(name?: string){
-            this.name = (name)? name : faker.name.findName()
-            this.spd = Math.floor((Math.random() * 16) + 8)
-            this.vit = Math.floor((Math.random() * 16) + 8) * 10
-            this.atk = Math.floor((Math.random() * 16) + 8)
-            this.hp = this.vit
-            
-            this.exp = (this instanceof Hero)? 0 : undefined;
-            this.lvl = (this instanceof Hero)? 1 : undefined;
-
-        }
-
-        update(): void {
-
-        }
-
-    }
-    
     export class Battler {
-        name: string
-        spd: number
-        vit: number
-        atk: number
-        hp: number
+        id: number = 0
+        name: string = ''
 
-        qt: number
-        alive: boolean
+        private _vit: number = 0 
+        private _str: number = 0
+        private _dex: number = 0
+        private _int: number = 0
+        private _fth: number = 0
+        private _wei: number = 0
 
-        constructor(data: Character){
-            this.name = data.name 
-            this.spd = data.spd
-            this.vit = data.vit 
-            this.atk = data.atk 
-            this.hp = data.hp
-            //@ts-ignore
-            this.qt = null
-            this.alive = this.checkLifeStatus(data)
+        private _hp: number = 0
+        private _mp: number = 0
+        private _qt: number = 0
+        
+        get mhp(): number {return this._vit * 8}
+        get hp(): number {return this._hp}
+        get mmp(): number {return this._int * 2}
+        get mp(): number {return this._mp}
+        get wdmg(): number {return Math.round(this._str * 1 + this._dex * 0.5)}
+        get mdmg(): number {return Math.round(this._int * 1 + this._dex * 0.5)}
+        get qt(): number {return this._qt}
+
+        constructor(){
+            this.id = this.getFriends().length
         }
 
-        checkLifeStatus(data:Character): boolean {
-            return data.vit > 0;
+        setName(input: string): void {
+            this.name = input
+            Graphics(`\nYour name is ${this.name}`)
+        }
+
+    
+        async setAttributes(): Promise<void> {
+            this._vit = Random.int(2, 8)
+            this._str = Random.int(2, 8)
+            this._dex = Random.int(2, 8)
+            this._int = Random.int(2, 8)
+            this._fth = Random.int(2, 8)
+            this._wei = 20
+        }
+
+        getAllAttributes(): Array<number> {
+            return [this._vit,this._str,this._dex,this._int,this._fth]
+        }
+
+        getAllStats(): Array<number> {
+            return [this.mhp,this.hp,this.mmp,this.mp,this.wdmg,this.mdmg,this.qt]
+        }
+
+        //NOTE Mockups
+        getWeight(): number {
+            return this._wei * (this._str/100)
+        }
+
+        setHp(value: number): void {
+            this._hp = Utils.clamp(value, 0, this.mhp)          
+        }
+        
+        setMp(value: number): void {
+            this._mp = Utils.clamp(value, 0, this.mmp)
+        }
+
+        setQt(value: number): void {
+            this._qt = this.getWeight() + value
+        }
+
+        updateCurrentQt(value: number): void {
+            this._qt = this._qt + value
+        }
+
+        recoverAll(): void {
+            this._hp = this.mhp
+            this._mp = this.mhp
+        }
+
+        isAlive(): boolean {
+            return this.mhp > 0 && this.hp > 0
+        }
+
+        getFriends(): Array<Battler> {
+            return (this instanceof Hero) ? Game.Heroes : Game.Enemies;
+        }
+        
+        getOpponents(): Array<Battler> {
+            return (this instanceof Enemy) ? Game.Heroes : Game.Enemies;
         }
 
         makeAction(id: number): Action {
             return new Action(this, id)
         }
 
-        isAlive(): boolean {
-           return this.vit > 0
-        }
-
-        getFriends(): Array<Battler> {
-            return (this instanceof Hero) ? Battle.heroes : Battle.enemies;
-        }
-        
-        getOpponents(): Array<Battler> {
-            return (this instanceof Enemy) ? Battle.heroes : Battle.enemies;
-        }
     }
 
     export class Hero extends Battler {
-
+        _exp?: number
+        _level?: number
     }
 
     export class Enemy extends Battler {
-
+        setName(input: string): void {
+            this.name = input
+        }
     }
 
     export class Action {
@@ -110,7 +136,7 @@ export namespace Objects {
             }
         }
         
-        async getTargets(): Promise<Array<Battler>> {
+        async getTargets(): Promise<any> {
             let possibleTargetsNames: Array<string> = this.getPossibleTargets().map(target => target.name)
             let targets = await this.openTargetSelection(possibleTargetsNames) 
             //console.log(targets[0].isAliv;

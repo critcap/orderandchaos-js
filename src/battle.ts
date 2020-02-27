@@ -1,61 +1,72 @@
 import {Game} from './game'
 import {Objects} from './objects'
 import {Graphics} from './game'
-
+import {PARTY_SIZE} from './game'
 
 export class Battle {
     private static _status: string = ''
-    static turnCount: number = 0
-    static activeBattler?: Objects.Battler 
-    static heroes: Array<Objects.Battler> = []
-    static enemies: Array<Objects.Battler> = []
-    private static actionStack: Array<Objects.Action>
-    static stack: Array<Objects.Skill> = []
+    private static _turnCount: number = 0
+    private static _activeBattler?: Objects.Battler 
+    private static _actionStack: Array<Objects.Action>
 
+    static get active(): Objects.Battler {return this.getActiveBattler() }
 
     static inProgress(): boolean {
         return this._status !== '';
     }
 
     static setup(): void {
-        this.turnCount = 0
-        this.heroes = []
-        this.enemies = []
-        this.activeBattler = undefined
-        this.createBattlers();
+        this._status = 'setup'
+        this._turnCount = 0
+        this._actionStack = []
+        this._status = 'start'
+        this.start()
+    }
 
+    static start(): void {
+        console.log('Battle Commences');
         this._status = 'start'
     }
 
-    static createBattlers(): void {
-        Game.heroes.forEach(hero => {
-            this.heroes.push(new Objects.Hero(hero))
-        })
-        Game.enemies.forEach(enemie => {
-            this.enemies.push(new Objects.Enemy(enemie))
-        })
+    static onStart(): void {
+        this.initBattlersQt() 
+
     }
 
     static getAllBattlers(): Array<Objects.Battler> {
-        return this.heroes.concat(this.enemies)
+        return Game.Heroes.concat(Game.Enemies)
     }
 
-    static getAllAliveBattlers(): Array<Objects.Battler> {
-        return this.getAllBattlers().filter(battler => {
-            return battler.alive == true
+    static getAllBattlersAlive(): Array<Objects.Battler> {
+        return  this.getAllHeroesAlive().concat(this.getAllEnemiesAlive())
+    }
+
+    static getHeroesBattlemember(): Array<Objects.Hero> {
+        return Game.Heroes.slice(0, PARTY_SIZE)
+    }
+
+    static getAllHeroesAlive(): Array<Objects.Hero> {
+        return this.getHeroesBattlemember().filter(hero => {
+            return hero.isAlive() === true
         })
     }
 
-    static initBattlersQueueTime(): void {
+    static getAllEnemies(): Array<Objects.Enemy> {
+        return Game.Enemies
+    }
+
+    static getAllEnemiesAlive(): Array<Objects.Battler>{
+        return this.getAllEnemies().filter(enemy => {
+            return enemy.isAlive() === true
+        })
+    }
+
+    static initBattlersQt(): void {
         this.getAllBattlers().forEach(battler => {
-            battler.qt = battler.spd
+            battler.setQt(0)
         })
     }
 
-    static nextTurn(): void {
-        this.turnCount++
-        this._status = 'turnStart'
-    }
 
     static updateTurn(): void {
         switch (this._status) {
@@ -67,8 +78,8 @@ export class Battle {
                 this.startInput()
                 break;
             case 'turnEnd':
-                this.getActiveBattler().qt = this.getActiveBattler().spd +1
-                this.activeBattler = this.getNextBattler()
+                this.getActiveBattler().setQt(50)
+                this._activeBattler = this.getNextBattler()
                 this._status = 'turnStart'
                 break;
             case 'cleanup':
@@ -94,28 +105,20 @@ export class Battle {
     }    
 
     static startActionStack(actions: Array<Objects.Action>): void {
-        this.actionStack = actions
+        this._actionStack = actions
         this.startActionProcess()
     }
 
     static startActionProcess(): void{
-        if(this.actionStack){
+        if(this._actionStack){
             let string = `3 ... 2 ... 1 ...`
             Graphics.slowTyping(string, {style: Graphics.white, flashStyle: false, delay: 100}, (end:any) => {
                 this.processAttack()   
             });
-            
-            
-            
-            
-            
+               
         }
     }
-    
-    static onStart(): void {
-        this.activeBattler = this.getNextBattler()
-        this.nextTurn()
-    }
+
     static onPhaseStart(): void {
 
     }
@@ -131,50 +134,48 @@ export class Battle {
     static onBattleEnd(): void {}
 
     static getActiveBattler(): Objects.Battler {
-        if(!this.activeBattler) this.activeBattler = this.getNextBattler()
-        return this.activeBattler
+        let active = Game.Heroes.concat(Game.Enemies).filter(battler => {return battler.qt === -1})
+        return (active.length > 0) ? active[0] : this.getNextBattler()
     }
 
     static getNextBattler(): Objects.Battler{
-        let qt = this.getAllAliveBattlers().sort((a, b) => a.qt - b.qt)
+        let qt = this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
         let qtqt = qt[0].qt
-        this.getAllAliveBattlers().forEach(ele =>{
-            ele.qt -= qtqt
+        this.getAllBattlersAlive().forEach(ele =>{
+            ele.updateCurrentQt(-qtqt)
         })
-        qt[0].qt = -1;
+        qt[0].updateCurrentQt(-(qt[0].qt + 1))
 
         return qt[0]
-
     }
 
     static processAttack(): void {
         let attacker: Objects.Battler = this.getActiveBattler();
         let target: Objects.Battler = this.getAttackTarget(this.getBattlerOpponents(attacker));
-        let damage: number = attacker.atk * 1000;
+        let damage: number = attacker.wdmg;
         let critical: boolean = this.isCriticalHit(); 
         (critical)? damage *= 2: null;
 
-        if(target.vit <= attacker.atk) {
-            target.vit = 0
-            target.alive = false
+        if(target.hp <= damage) {
+            target.setHp(0)
             console.log(`${attacker.name} defeats ${target.name}`);
             let opponents = this.getBattlerOpponents(attacker)
             if(this.checkIfDefeated(opponents)) {
-                if(opponents == this.heroes) {
+                if(opponents == Game.Heroes) {
                     this.processDefeat()
                 }
-                if(opponents == this.enemies) {
+                if(opponents == Game.Enemies) {
                     this.processVictory()
                 }
             }
         }
         else if(critical){
-            target.vit -= damage
+            target.setHp(target.hp - damage)
             console.log(`${attacker.name} CRITICALLY strikes ${target.name} for ${damage}`);
             this._status = "turnEnd"
         } 
         else {        
-            target.vit -= damage
+            target.setHp(target.hp - damage)
             console.log(`${attacker.name} deals ${damage} damage to ${target.name}`);
             this._status = "turnEnd"
         }     
@@ -186,22 +187,22 @@ export class Battle {
 
     static checkIfDefeated(group: Array<Objects.Battler>): boolean {
         let alive = group.filter(ele => {
-            return ele.alive == true;
+            return ele.isAlive() == true;
         })
         return (alive.length === 0) ? true : false ;
     }
 
     static getBattlerFriends(battler: Objects.Battler): Array<Objects.Battler> {
-        return (this.heroes.includes(battler)) ? this.heroes : this.enemies;
+        return (Game.Heroes.includes(battler)) ? Game.Heroes : Game.Enemies;
     }     
     
     static getBattlerOpponents(battler: Objects.Battler): Array<Objects.Battler> {
-        return (this.heroes.includes(battler)) ? this.enemies : this.heroes;
+        return (Game.Heroes.includes(battler)) ? Game.Enemies : Game.Heroes;
     }
 
     static getAttackTarget(group: Array<Objects.Battler>): Objects.Battler {
         let validTargets = group.filter(ele => {
-            return ele.alive === true
+            return ele.isAlive() === true
         })
         return validTargets[Math.floor((Math.random() * validTargets.length))];
     }

@@ -2,6 +2,18 @@ import {Objects} from './objects';
 import {Scenes} from './scenes';
 import {Battle} from './battle'
 
+const rndNames = require('fantasy-names')
+
+
+
+export class Utils{
+    static clamp(input: number, min: number, max: number): number{
+        return Math.min(Math.max(input, min), max);
+      };
+}
+
+export const Random = require('random')
+
 export const Graphics = require('terminal-kit').terminal
 Graphics.grabInput(true)
 Graphics.on('key', (name:any, data:any) => {
@@ -9,33 +21,29 @@ Graphics.on('key', (name:any, data:any) => {
         case "z":
             Game.shutdown()
             break;
-        case "u":
-            Graphics.deleteLine(1)
-            break;
-        
-        default:
+        default:     
             break;
     }
-    
-})
-const PARTY_SIZE: number = 3;
+}) 
+
+
+export const PARTY_SIZE: number = 3;
 const TICK_RATE: number = 20;
-const hrtimeMs = function () {let time = process.hrtime(); return time[0] * 1000 / TICK_RATE}
+const hrtimeMs = () => {let time = process.hrtime(); return time[0] * 1000 / TICK_RATE}
 
 export class Game {
     private static _previousTick = hrtimeMs()
     private static _tickLengthMs = 1000 / TICK_RATE
-    private static _control: number = 0
-    private static _input: any = undefined
     private static _timeToWait: number = 0;
     
-    static heroes: Array<Objects.Character> = []
-    static enemies: Array<Objects.Character> = []
+    static Heroes: Array<Objects.Hero> = []
+    static Enemies: Array<Objects.Enemy> = []
 
-    static run(): void {
-        Graphics.clear()
-        this.createHeroes()
-        this.createEncounter()
+    static async run(): Promise<void> {
+        Graphics.clear()     
+        let hero = this.startCharacterCreation()
+        let enemy = this.createEncounter()   
+        await Promise.all([hero, enemy])
         Battle.setup()
         this.requestUpdate()       
     }
@@ -46,15 +54,33 @@ export class Game {
         }
     }
 
-    static createHeroes(): void {
-        for (let i = 1; i <= PARTY_SIZE; i++) {
-            this.heroes.push(new Objects.Character())
-        } 
+    static async startCharacterCreation(): Promise<void> {
+        for (let i = 0; i < PARTY_SIZE; i++) {
+            try {
+                let Hero = new Objects.Hero()
+                let name = await Graphics.inputField({default: rndNames('dragon age', 'humans', 1)[0]}).promise
+                Hero.setName(name)
+                Graphics.nextLine(1)
+                await Hero.setAttributes()
+                Graphics.nextLine(1)
+                Hero.recoverAll()
+                this.Heroes.push(Hero)
+            } catch (error) {
+               console.log(error);
+               this.shutdown()         
+            }
+        }
     }
 
-    static createEncounter(): void {
-        for (let i = 1; i <= PARTY_SIZE; i++) {
-            this.enemies.push(new Objects.Character())       
+    static async createEncounter(): Promise<void> {
+        let enemyCount = Random.int(2,4)
+        let enemyNames = rndNames('Pathfinder', 'goblins', enemyCount).map( (name:string)=> name[0].toUpperCase() + name.slice(1))
+        for (let i = 0; i < enemyCount; i++) {
+            let Enemy = new Objects.Enemy()
+            Enemy.setName(enemyNames[i])
+            Enemy.setAttributes()
+            Enemy.recoverAll()
+            this.Enemies.push(Enemy)
         }
     }
 
@@ -68,31 +94,11 @@ export class Game {
         }
     }
 
-    static isInputActive(): boolean {
-        return (this._input)? true : false;
-    }
-
-    static openInput(input: any): void {
-        if(!this.isInputActive()) {
-            this._input = input;
-        }
-    }
-    static overrideInput(input: any): void {
-        if(this.isInputActive()) {
-            this._input = input
-        }
-    }
-
-    static closeInput(): void {
-        this._input = undefined
-    }
-
     static isWaiting(): boolean {
         return this._timeToWait > 0
     }
 
     static isStopped(): boolean {
-        if(this.isInputActive()) return true;
         if(this.isWaiting()) return true;
         return false;
     }
@@ -101,8 +107,3 @@ export class Game {
         Graphics.processExit()
     }
 }
-
-
-
-
-//export = Game

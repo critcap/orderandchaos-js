@@ -1,6 +1,11 @@
 {
     "files.exclude": {
-        "**/.CVS": true,
-        "**/CVS": false
+        ".vscode": true,
+        "**/.DS_Store": false,
+        "**/.hg": false,
+        "**/.md": true,
+        "**/.svn": false,
+        "**/CVS": false,
+        "README.md": true
     }
 }
