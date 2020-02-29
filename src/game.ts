@@ -9,7 +9,15 @@ const rndNames = require('fantasy-names')
 export class Utils{
     static clamp(input: number, min: number, max: number): number{
         return Math.min(Math.max(input, min), max);
-      };
+    };
+
+    static add(input: Array<any>, item: any): Array<any> {
+        let output = [item]
+        input.forEach(ele => {
+            output.push(ele)
+        })
+        return output;
+    }
 }
 
 export const Random = require('random')
@@ -34,7 +42,7 @@ const hrtimeMs = () => {let time = process.hrtime(); return time[0] * 1000 / TIC
 export class Game {
     private static _previousTick = hrtimeMs()
     private static _tickLengthMs = 1000 / TICK_RATE
-    private static _timeToWait: number = 0;
+    private static _waitingDurationMs: number = 0;
     
     static Heroes: Array<Objects.Hero> = []
     static Enemies: Array<Objects.Enemy> = []
@@ -47,10 +55,16 @@ export class Game {
         Battle.setup()
         this.requestUpdate()       
     }
-    
+
     static update(): void {
-        if(Battle.inProgress()){
-            Battle.updateTurn()
+        if(!this.isStopped()){
+            try {
+                if(Battle.inProgress()){
+                    Battle.updateTurn()
+                }
+            } catch (error) {
+                Game.shutdown()        
+            }
         }
     }
 
@@ -85,17 +99,25 @@ export class Game {
     }
 
     static requestUpdate(): void {
-        setTimeout(() => this.requestUpdate(), this._tickLengthMs)
         let now = hrtimeMs()
         let delta = (now - this._previousTick) / 1000
         this._previousTick = now
-        if (!this.isStopped()) {
-            this.update();
-        }
+        this.update();
+        let wait = this._waitingDurationMs
+        this._waitingDurationMs = 0
+        setTimeout(() => this.requestUpdate(), this._tickLengthMs + wait)  
     }
 
     static isWaiting(): boolean {
-        return this._timeToWait > 0
+        return this._waitingDurationMs > 0
+    }
+
+    static requestWait(duration: number): void {
+        if(!this.isWaiting()) this._waitingDurationMs += duration;        
+    }
+
+    static stopWait(): void {
+        this._waitingDurationMs = 0
     }
 
     static isStopped(): boolean {

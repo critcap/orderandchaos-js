@@ -6,10 +6,10 @@ import {PARTY_SIZE} from './game'
 export class Battle {
     private static _status: string = ''
     private static _turnCount: number = 0
-    private static _activeBattler?: Objects.Battler 
-    private static _actionStack: Array<Objects.Action>
+    private static _subject: Objects.Battler
+    private static _actionStack: Array<Objects.Action> = []
 
-    static get active(): Objects.Battler {return this.getActiveBattler() }
+    static get active(): Objects.Battler {return this.getSubject() }
 
     static inProgress(): boolean {
         return this._status !== '';
@@ -19,18 +19,23 @@ export class Battle {
         this._status = 'setup'
         this._turnCount = 0
         this._actionStack = []
-        this._status = 'start'
-        this.start()
+        //@ts-ignore
+        this._subject = undefined
+        this._status = 'Start'
+        this.Start()
     }
 
-    static start(): void {
+    static Start(): void {
         console.log('Battle Commences');
-        this._status = 'start'
+        this._status = 'Start'
     }
 
     static onStart(): void {
-        this.initBattlersQt() 
-
+        this.refreshAllQt()
+        this.setNextSubject()
+        //on Start effects
+        //on Start events
+        this._status = 'TurnStart'
     }
 
     static getAllBattlers(): Array<Objects.Battler> {
@@ -61,165 +66,152 @@ export class Battle {
         })
     }
 
-    static initBattlersQt(): void {
-        this.getAllBattlers().forEach(battler => {
+    static refreshAllQt(): void {
+        this.getAllBattlersAlive().forEach(battler => {
             battler.setQt(0)
         })
     }
 
+    static getSubject(): Objects.Battler {
+        if(!this._subject){
+            this.setNextSubject()
+            return this._subject
+        }
+        return this._subject
+    }
+
+    static setNextSubject(): void {
+        let allBattler = this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
+        let nextBattler = allBattler[0]
+        this.getAllBattlersAlive().forEach(battler =>{
+            battler.updateCurrentQt(-nextBattler.qt)
+        })
+        nextBattler.updateCurrentQt((nextBattler.qt + 1) * -1)
+        this._subject = nextBattler
+    }
 
     static updateTurn(): void {
-        switch (this._status) {
-            case 'start':
-                this.onStart()
-                break;
-            case 'turnStart':
-                console.log(`Its ${this.getActiveBattler().name}'s turn`);
-                this.startInput()
-                break;
-            case 'turnEnd':
-                this.getActiveBattler().setQt(50)
-                this._activeBattler = this.getNextBattler()
-                this._status = 'turnStart'
-                break;
-            case 'cleanup':
-                this.afterBattleCleanUp()
-                break;       
+        if(!this.checkBattleEvent()){    
+            switch (this._status) {
+                case 'Start':
+                    this.onStart()
+                    break;
+                case 'TurnStart':
+                    this.onTurnStart()
+                    break;
+                case 'PerformActions':
+                    this.processActionStack()
+                case 'TurnEnd':
+                    this.onTurnEnd()
+                    break;
+                case 'BattleEnd':
+                    this.onBattleEnd()
+                    break;       
+            }
         }
     }
 
-    static async startInput(): Promise<any> {
+    static checkBattleEvent(): boolean {
+        switch (this._status) {
+            case 'Start':
+            case 'TurnStart':
+            case 'TurnEnd':
+                if(this.checkBattleEnd()) return true;        
+        }
+        return false
+    }
+
+    static checkBattleEnd(): boolean {
+        if(this._status){
+            if(this.checkAllDead(Game.Heroes)){
+                this.processDefeat()
+                return true;
+            }
+            if(this.checkAllDead(Game.Enemies)){
+                this.processVictory()
+                return true;
+            }
+        }
+        return false
+    }
+
+
+    //placeholder
+
+    static checkAllDead(unit: Array<Objects.Battler>): boolean {
+        let dead = unit.filter(battler => {
+            return !battler.isAlive() == true
+        })
+        return (dead.length === unit.length)? true: false;
+    }
+
+    static onTurnStart(): void {
+        Graphics.clear()
+        Graphics(`\nIts ${this.getSubject().name}'s turn`);
+        Graphics(`\n${this.active.name}|HP: ${this.active.hp}/${this.active.mhp}|MP: ${this.active.mp}/${this.active.mmp}`);
+        //buff debuffs
+        //death check
+        //check AP
+        //when negativ AP skip turn
+        this.onActionSelect()
+    }
+
+    static async onActionSelect(): Promise<any> {
         this._status = 'input'
         try {
             let command = await Graphics.singleLineMenu(['Attack', 'Guard']).promise;   
-            let action = new Objects.Action(this.getActiveBattler(), command.selectedIndex)
+            let action = new Objects.Action(this.getSubject(), command.selectedIndex)
             let targets = await action.getTargets()
             action.setTargets(targets)
             //console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
             this.startActionStack([action])
         } catch (error) {
-            Graphics.clear()
             console.log(error);
             Game.shutdown()
         }  
     }    
 
     static startActionStack(actions: Array<Objects.Action>): void {
+        this._status = 'PerformActions'
         this._actionStack = actions
-        this.startActionProcess()
     }
 
-    static startActionProcess(): void{
-        if(this._actionStack){
-            let string = `3 ... 2 ... 1 ...`
-            Graphics.slowTyping(string, {style: Graphics.white, flashStyle: false, delay: 100}, (end:any) => {
-                this.processAttack()   
-            });
-               
+    static processActionStack(): void {
+        if(this._actionStack.length > 0) {
+            this._actionStack[this._actionStack.length - 1].perform()
+            this._actionStack.pop()
+            Game.requestWait(1500)
+        }
+        else if(this._actionStack.length === 0) {
+            this._status = 'TurnEnd'
         }
     }
 
-    static onPhaseStart(): void {
-
-    }
-    static onActionSelect(): void {
-
-    }
-    static onPhaseEnd(): void {
-
-    }
     static onTurnEnd(): void {
-
-    }
-    static onBattleEnd(): void {}
-
-    static getActiveBattler(): Objects.Battler {
-        let active = Game.Heroes.concat(Game.Enemies).filter(battler => {return battler.qt === -1})
-        return (active.length > 0) ? active[0] : this.getNextBattler()
+        // buffs debuffs
+        // bleeding 
+        this.setNextSubject()
+        this._status = 'TurnStart'
     }
 
-    static getNextBattler(): Objects.Battler{
-        let qt = this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
-        let qtqt = qt[0].qt
-        this.getAllBattlersAlive().forEach(ele =>{
-            ele.updateCurrentQt(-qtqt)
-        })
-        qt[0].updateCurrentQt(-(qt[0].qt + 1))
-
-        return qt[0]
-    }
-
-    static processAttack(): void {
-        let attacker: Objects.Battler = this.getActiveBattler();
-        let target: Objects.Battler = this.getAttackTarget(this.getBattlerOpponents(attacker));
-        let damage: number = attacker.wdmg;
-        let critical: boolean = this.isCriticalHit(); 
-        (critical)? damage *= 2: null;
-
-        if(target.hp <= damage) {
-            target.setHp(0)
-            console.log(`${attacker.name} defeats ${target.name}`);
-            let opponents = this.getBattlerOpponents(attacker)
-            if(this.checkIfDefeated(opponents)) {
-                if(opponents == Game.Heroes) {
-                    this.processDefeat()
-                }
-                if(opponents == Game.Enemies) {
-                    this.processVictory()
-                }
-            }
-        }
-        else if(critical){
-            target.setHp(target.hp - damage)
-            console.log(`${attacker.name} CRITICALLY strikes ${target.name} for ${damage}`);
-            this._status = "turnEnd"
-        } 
-        else {        
-            target.setHp(target.hp - damage)
-            console.log(`${attacker.name} deals ${damage} damage to ${target.name}`);
-            this._status = "turnEnd"
-        }     
-    }
-
-    static isCriticalHit(): boolean {
-        return Math.random() < 0.2
-    }
-
-    static checkIfDefeated(group: Array<Objects.Battler>): boolean {
-        let alive = group.filter(ele => {
-            return ele.isAlive() == true;
-        })
-        return (alive.length === 0) ? true : false ;
-    }
-
-    static getBattlerFriends(battler: Objects.Battler): Array<Objects.Battler> {
-        return (Game.Heroes.includes(battler)) ? Game.Heroes : Game.Enemies;
-    }     
-    
-    static getBattlerOpponents(battler: Objects.Battler): Array<Objects.Battler> {
-        return (Game.Heroes.includes(battler)) ? Game.Enemies : Game.Heroes;
-    }
-
-    static getAttackTarget(group: Array<Objects.Battler>): Objects.Battler {
-        let validTargets = group.filter(ele => {
-            return ele.isAlive() === true
-        })
-        return validTargets[Math.floor((Math.random() * validTargets.length))];
+    static onBattleEnd(): void {
+        Game.shutdown()   
     }
 
     static processVictory(): void {
-        console.log('Your Group was Victorious');
-        this.close()
-        
+        //remove all buffs and statuses
+        //gain exp
+        //gain items
+        Graphics('\n^WYOUR TEAM WAS^ ^GVICTORIOUS^')
+        this._status = 'BattleEnd'
     }
     static processDefeat(): void {
-        console.log('Your Group was Defeated');
-        this.close()
+        //remove all buffs and statuses
+        //gain exp
+        //gain items
+        Graphics('\n^WYOUR TEAM WAS^ ^RDEFEATED^')
+        this._status = 'BattleEnd'
         
-    }
-
-    static afterBattleCleanUp(): void {
-
     }
 
     static close(): void {
@@ -228,4 +220,4 @@ export class Battle {
     }
 
 }
-import { format } from 'url'
+

@@ -25,7 +25,7 @@ export namespace Objects {
         get hp(): number {return this._hp}
         get mmp(): number {return this._int * 2}
         get mp(): number {return this._mp}
-        get wdmg(): number {return Math.round(this._str * 1 + this._dex * 0.5)}
+        get wdmg(): number {return Math.round(this._str * 3 + this._dex * 0.5)}
         get mdmg(): number {return Math.round(this._int * 1 + this._dex * 0.5)}
         get qt(): number {return this._qt}
 
@@ -73,13 +73,28 @@ export namespace Objects {
             this._qt = this.getWeight() + value
         }
 
+        revive(): void {
+            this._hp = 1;
+            this._qt = this.getWeight()
+        }
+
         updateCurrentQt(value: number): void {
             this._qt = this._qt + value
         }
 
+        updateDead(): void {
+            if(!this.isAlive()){
+                this._hp = 0
+                this._qt = 0
+                Graphics(`\n^W${this.name}^ died!`)
+                //break casting
+                //remove buffs debuffs
+            }
+        }
+
         recoverAll(): void {
             this._hp = this.mhp
-            this._mp = this.mhp
+            this._mp = this.mmp
         }
 
         isAlive(): boolean {
@@ -112,14 +127,14 @@ export namespace Objects {
     }
 
     export class Action {
-        user: Battler
-        skill: Skill
-        targets: Array<Battler>
+        _user: Battler
+        _skill: Skill
+        _targets: Array<Battler>
 
         constructor(user: Battler, id: number) {
-            this.user = user
-            this.skill = new Skill(this.fetchSkillFromID(id))
-            this.targets = []
+            this._user = user
+            this._skill = new Skill(this.fetchSkillFromID(id))
+            this._targets = []
             
         }
 
@@ -127,7 +142,7 @@ export namespace Objects {
             //FIXME  Placeholder
             switch (id) {
                 case 0:
-                    return {id: 0, name: 'Attack', damage: {type: 1, formular: 'user.wdamage() * 1.0', element: 1, variance: 10}, rt: 50, scope: 1, cost: 0, costType: 'Mana', tooltip: ''}
+                    return {id: 0, name: 'Attack', damage: {type: 1, formular: 'a.wdmg* 1.0', element: 1, variance: 10}, rt: 50, scope: 1, cost: 0, costType: 'Mana', tooltip: ''}
                     break;
             
                 default:
@@ -142,23 +157,23 @@ export namespace Objects {
             //console.log(targets[0].isAliv;
             if(targets){
                 if(targets[0].isAlive()) return targets;
-                await this.getTargets()
+                return await this.getTargets()
             }         
         }
 
         setTargets(targets: Array<Battler>): void {
-           this.targets = targets;      
+           this._targets = targets;      
         }
 
         getPossibleTargets(): Array<Battler> {
-            switch (this.skill.scope) {
+            switch (this._skill.scope) {
                 //FIXME only 2 for testing
                 case 0:
-                    return [this.user]
+                    return [this._user]
                     break;
                 
                 default:
-                    return this.user.getOpponents()
+                    return this._user.getOpponents()
                     break;
             }
         }
@@ -170,9 +185,49 @@ export namespace Objects {
         }
 
         async targetIsValid(): Promise<boolean> {
-           return this.targets[0].isAlive() == true
+           return this._targets[0].isAlive() == true
         }
 
+        isCriticalHit(): boolean {
+            return Random.float() < 0.2
+        }
+
+        perform(): void {
+            let user = this._user
+            let critical = this.isCriticalHit()
+            let targetCount = this._targets.length
+            user.setQt(this._skill.rt)
+            for (let i = 0; i < targetCount; i++) {
+                let target = this._targets[i]
+                let result: number = this.evalSkillFormular(user, target);       
+                result *= this.calcDamageVariance();
+                (critical)? result *= 1.5 : null;
+                result = Math.round(result)
+                this.applyDamage(target, result, critical)
+            }   
+        }
+
+        applyDamage(target: Battler, damage: number, crit: boolean = false): void {
+            target.setHp(target.hp - damage)
+            this.makeDamageMessage(target, damage, crit)
+            target.updateDead()
+        }
+
+        makeDamageMessage(target: Battler, dmg: number, crit: boolean = false): void {
+            let usr = '^G' + this._user.name
+            let trg = '^R' + target.name
+            let cri = (crit)? '^Ycritcal^ ': '';
+            Graphics(`\n${usr}^ deals ${cri}^W${dmg}^ Damage to ${trg}^`).nextLine(1)
+        }
+
+        evalSkillFormular(a?: Battler, b?: Battler): number {
+            return eval(this._skill.damage.formular)
+        }
+
+        calcDamageVariance(): number {
+           let int = this._skill.damage.variance
+           return Random.int(-int, int)/100 + 1
+        }
     }
 
     interface Damage {
