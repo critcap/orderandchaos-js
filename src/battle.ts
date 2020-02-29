@@ -32,6 +32,9 @@ export class Battle {
 
     static onStart(): void {
         this.refreshAllQt()
+        this.getAllBattlersAlive().forEach(battler => {
+            battler.setState('wait')            
+        })
         this.setNextSubject()
         //on Start effects
         //on Start events
@@ -87,6 +90,7 @@ export class Battle {
             battler.updateCurrentQt(-nextBattler.qt)
         })
         nextBattler.updateCurrentQt((nextBattler.qt + 1) * -1)
+        nextBattler.setState('select');
         this._subject = nextBattler
     }
 
@@ -178,9 +182,9 @@ export class Battle {
 
     static processActionStack(): void {
         if(this._actionStack.length > 0) {
-            this._actionStack[this._actionStack.length - 1].perform()
+            this._actionStack[0].perform()
             this._actionStack.pop()
-            Game.requestWait(1500)
+            Game.requestWait(1000)
         }
         else if(this._actionStack.length === 0) {
             this._status = 'TurnEnd'
@@ -190,11 +194,15 @@ export class Battle {
     static onTurnEnd(): void {
         // buffs debuffs
         // bleeding 
+        if(!this.getSubject().isGuarding) this.getSubject().setState('wait');
         this.setNextSubject()
         this._status = 'TurnStart'
     }
 
     static onBattleEnd(): void {
+        this.getAllBattlers().forEach(battler => {
+            battler.setState('')
+        })
         Game.shutdown()   
     }
 

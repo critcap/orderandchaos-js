@@ -9,7 +9,8 @@ export namespace Objects {
     export class Battler {
         id: number = 0
         name: string = ''
-
+        
+        private _state: string = ''
         private _vit: number = 0 
         private _str: number = 0
         private _dex: number = 0
@@ -38,6 +39,29 @@ export namespace Objects {
             Graphics(`\nYour name is ${this.name}`)
         }
 
+        isAttacking(): boolean {
+            return this._state === 'attack'
+        }
+
+        isGuarding(): boolean {
+            return this._state === 'guard'
+        }
+
+        isSelecting(): boolean {
+            return this._state === 'select'
+        }
+
+        isCasting(): boolean {
+            return this._state === 'cast'
+        }
+        isWaiting(): boolean {
+            return this._state === 'wait'
+        }
+
+
+        setState(state: string): void {
+            this._state = state
+        }
     
         async setAttributes(): Promise<void> {
             this._vit = Random.int(2, 8)
@@ -142,11 +166,11 @@ export namespace Objects {
             //FIXME  Placeholder
             switch (id) {
                 case 0:
-                    return {id: 0, name: 'Attack', damage: {type: 1, formular: 'a.wdmg* 1.0', element: 1, variance: 10}, rt: 50, scope: 1, cost: 0, costType: 'Mana', tooltip: ''}
+                    return {id: 0, name: 'Attack', damage: {type: 1, formular: 'a.wdmg* 1.0', element: 1, variance: 10}, rt: 50, scope: 1, cost: 0, costType: 'Mana', tooltip: '', state: 'attack'}
                     break;
             
                 default:
-                    return {id: 1, name: 'Guard', damage: {type: 0, formular: '', element: 1, variance: 10}, rt: 25, scope: 0, cost: 0, costType: 'Mana', tooltip: ''}
+                    return {id: 1, name: 'Guard', damage: {type: 0, formular: '', element: 1, variance: 10}, rt: 25, scope: 0, cost: 0, costType: 'Mana', tooltip: '', state: 'guard'}
                     break;
             }
         }
@@ -192,19 +216,27 @@ export namespace Objects {
             return Random.float() < 0.2
         }
 
+        isDamageAbility(): boolean {
+           return this._skill.damage.type !== 0
+        }
+
         perform(): void {
             let user = this._user
+            user.setState(this._skill.state)
             let critical = this.isCriticalHit()
             let targetCount = this._targets.length
             user.setQt(this._skill.rt)
-            for (let i = 0; i < targetCount; i++) {
-                let target = this._targets[i]
-                let result: number = this.evalSkillFormular(user, target);       
-                result *= this.calcDamageVariance();
-                (critical)? result *= 1.5 : null;
-                result = Math.round(result)
-                this.applyDamage(target, result, critical)
-            }   
+            if(this.isDamageAbility()){
+                for (let i = 0; i < targetCount; i++) {
+                    let target = this._targets[i]
+                    let result: number = this.evalSkillFormular(user, target);       
+                    result *= this.calcDamageVariance();
+                    (critical)? result *= 1.5 : null;
+                    (target.isGuarding())? result *= 0.5: null;
+                    result = Math.round(result)
+                    this.applyDamage(target, result, critical)
+                }   
+            }            
         }
 
         applyDamage(target: Battler, damage: number, crit: boolean = false): void {
@@ -246,6 +278,7 @@ export namespace Objects {
         cost: number
         costType: string
         tooltip: string
+        state: string
 
         constructor(data: Skill){
             this.id = data.id
@@ -256,6 +289,7 @@ export namespace Objects {
             this.cost = data.cost
             this.costType = data.costType
             this.tooltip = data.tooltip
+            this.state = data.state
         }
     }
 }

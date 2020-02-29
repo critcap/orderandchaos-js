@@ -29,6 +29,9 @@ Graphics.on('key', (name:any, data:any) => {
         case "z":
             Game.shutdown()
             break;
+        case "#":
+            Graphics.eraseLine().previousLine(1).eraseLine()
+            break;
         default:     
             break;
     }
