@@ -2,6 +2,7 @@ import { Game, Graphics } from "./game"
 import { Battle} from "./battle"
 import { Utils } from "./game"
 import { Random } from "./game"
+import { Data } from "./data"
 
 
 export namespace Objects {
@@ -133,13 +134,40 @@ export namespace Objects {
             return (this instanceof Enemy) ? Game.Heroes : Game.Enemies;
         }
 
-        makeAction(): Action {
-            let action = new Action();
+        async makeAction(): Promise<Action> {
+            let action = new Action(this)
+            await this.selectCommand(action)   
+            return action
         }
 
-        async selectCommand(): Promise<any> {
+        async selectCommand(action: Action): Promise<any> {
+            let commands = this.getCommands()
             let options = {}
-            return Graphics.singleLineMenu(this.getCommands(), options).promise
+            let command = await Graphics.singleLineMenu(commands, options).promise
+            let skillIDs = this.getSkillsFromCommand(command.selectedText)
+            await this.selectSkill(skillIDs, action)       
+        }
+
+        async selectSkill(list: Array<number>, action: Action): Promise<any> {
+            
+            let id = list[0]
+            if(list.length > 1){
+                let items = this.createSkillSelectItems(list)
+                let options = {cancelable: true}
+                let result = await Graphics.gridMenu(items, options).promise
+                result.selectedIndex ? id = result.selectedIndex: 
+                result.canceled === true ? await this.selectCommand(action): null;
+            }
+            
+            action.setSkillId(id)
+            await this.selectTarget(list, action); 
+        }
+
+        createSkillSelectItems(list: Array<number>): Array<string> {
+            return list.map(id => {
+                let skill = Data.Skills[id]
+                return Graphics.str(`^b${skill.name}^ MP: ^m${skill.cost}^`)
+            })
         }
         
         getCommands(): Array<string> {
@@ -148,6 +176,18 @@ export namespace Objects {
             this.hasUsableItems() ? commands.push('Items'): null;
             commands.push('Guard');
             return commands  
+        }
+
+        async selectTarget(list: Array<number>, action: Action): Promise<any> {
+            let validTargets = this.getOpponents().map(enemy => {
+                return enemy.isAlive() ? enemy.name: null;
+            })
+            let targets: Array<any> = [];
+            let options = {cancelable: true}
+            let result = await Graphics.gridMenu(validTargets, options).promise;
+            result.canceled == true ? list.length > 1 ? await this.selectSkill(list, action): await this.selectCommand(action): null;
+            if(typeof result.selectedIndex === 'number') action.setTargets([this.getOpponents()[result.selectedIndex]])  
+                
         }
 
         hasUsableItems(): boolean {
@@ -164,15 +204,17 @@ export namespace Objects {
                     return [0];
                 case 'ATTACK':
                     return [1];  
-                case 'SPELLS':
-                    return [1231]
-                case 'ITEMS':
-                    return [0,9]    
+                // case 'SPELLS':
+                //     return [1231]
+                // case 'ITEMS':
+                //     return [0,9]    
                 default:
                     return [0]
                     break;
             }
         }
+
+
     }
 
     export class Hero extends Battler {
@@ -188,17 +230,16 @@ export namespace Objects {
 
     export class Action {
         _user: Battler
-        _skill: number
-        _targets: Array<Battler>
+        _skillId: number = 0
+        _targets: Array<Battler> = []
 
-        constructor(user: Battler, id: number) {
-            this._user = user
-            this._skill = 0
-            this._targets = []
-            
+        constructor(user: Battler) {
+            this._user = user        
         }
 
-        skill(): {};
+        skill(): Skill{
+            return Data.Skills[this._skillId]
+        };
 
         
         async getTargets(): Promise<any> {
@@ -209,6 +250,10 @@ export namespace Objects {
                 if(targets[0].isAlive()) return targets;
                 return await this.getTargets()
             }         
+        }
+
+        setSkillId(id: number): void {
+            this._skillId = id
         }
 
         setTargets(targets: Array<Battler>): void {
@@ -251,18 +296,18 @@ export namespace Objects {
             user.setState(this.skill().state)
             let critical = this.isCriticalHit()
             let targetCount = this._targets.length
-            user.setQt(this.skill().rt)
+            user.setQt(this.skill().rt)       
             if(this.isDamageAbility()){
                 for (let i = 0; i < targetCount; i++) {
                     let target = this._targets[i]
-                    let result: number = this.evalSkillFormular(user, target);       
+                    let result: number = this.evalSkillFormular(user, target);      
                     result *= this.calcDamageVariance();
-                    (critical)? result *= 1.5 : null;
-                    (target.isGuarding())? result *= 0.5: null;
-                    result = Math.round(result)
+                    critical ? result *= 1.5 : null;
+                    target.isGuarding() ? result *= 0.5: null;
+                    result = Math.round(result)              
                     this.applyDamage(target, result, critical)
                 }   
-            }            
+            }  
         }
 
         applyDamage(target: Battler, damage: number, crit: boolean = false): void {
@@ -284,7 +329,7 @@ export namespace Objects {
 
         calcDamageVariance(): number {
            let int = this.skill().damage.variance
-           return Random.int(-int, int)/100 + 1
+           return Random.int(-int, int)/100 + 1;
         }
     }
 

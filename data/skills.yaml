@@ -4,7 +4,7 @@
     type: 0
     formular: ''
     element: 0
-    variance: 0.10
+    variance: 10
   rt: 0
   scope: 0
   cost: 0
@@ -15,9 +15,9 @@
 - name: 'Attack'
   damage: 
     type: 1
-    formular: 'user.wdmg * 1.0'
+    formular: 'a.wdmg * 1.0'
     element: 0
-    variance: 0.10
+    variance: 10
   rt: 0
   scope: 1
   cost: 0

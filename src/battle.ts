@@ -163,27 +163,15 @@ export class Battle {
     static async onActionSelect(): Promise<any> {
         this._status = 'input'
         try {
-            let command = await this.subject().selectCommand()
-            let skills = this.subject().getSkillsFromCommand(command)
-            //if(skills.length > 1);
-            let action = new Objects.Action(this.subject(), command.selectedIndex)
-            let targets = await action.getTargets()
-            action.setTargets(targets)
-            //console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
+            let action = await this.subject().makeAction()
+            console.log(action);
+            
             this.startActionStack([action])
         } catch (error) {
             console.log(error);
             Game.shutdown()
         }  
     }    
-
-    static async openCommandSelect(): Promise<any> {
-        let commands = ['^wAttack^', 'Guard']
-        let options = {}
-        return Graphics.singleLineMenu(commands, options).promise
-    }
-    
-    
 
     static startActionStack(actions: Array<Objects.Action>): void {
         this._status = 'PerformActions'
@@ -194,7 +182,8 @@ export class Battle {
         if(this._actionStack.length > 0) {
             this._actionStack[0].perform()
             this._actionStack.pop()
-            Game.requestWait(1000)
+            
+            Game.requestWait(90000)
         }
         else if(this._actionStack.length === 0) {
             this._status = 'TurnEnd'

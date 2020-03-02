@@ -5,8 +5,6 @@ import {Data} from './data'
 
 const rndNames = require('fantasy-names')
 
-
-
 export class Utils{
     static clamp(input: number, min: number, max: number): number{
         return Math.min(Math.max(input, min), max);
@@ -49,14 +47,12 @@ export class Game {
 
     static async run(): Promise<void> {
         Graphics.clear() 
-        await Data.loadDatabases()
-        console.log(Data.Skills);
-        
-        // let hero = this.startCharacterCreation()
-        // let enemy = this.createEncounter()   
-        // await Promise.all([hero, enemy])
-        // Battle.setup()
-        // this.requestUpdate()       
+        await Data.loadDatabases()    
+        let hero = this.startCharacterCreation()
+        let enemy = this.createEncounter()   
+        await Promise.all([hero, enemy])
+        Battle.setup()
+        this.requestUpdate()       
     }
 
     static update(): void {
