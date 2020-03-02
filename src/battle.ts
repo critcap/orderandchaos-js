@@ -9,7 +9,7 @@ export class Battle {
     private static _subject: Objects.Battler
     private static _actionStack: Array<Objects.Action> = []
 
-    static get active(): Objects.Battler {return this.getSubject() }
+    static get active(): Objects.Battler {return this.subject() }
 
     static inProgress(): boolean {
         return this._status !== '';
@@ -75,7 +75,7 @@ export class Battle {
         })
     }
 
-    static getSubject(): Objects.Battler {
+    static subject(): Objects.Battler {
         if(!this._subject){
             this.setNextSubject()
             return this._subject
@@ -151,7 +151,7 @@ export class Battle {
 
     static onTurnStart(): void {
         Graphics.clear()
-        Graphics(`\nIts ${this.getSubject().name}'s turn`);
+        Graphics(`\nIts ${this.subject().name}'s turn`);
         Graphics(`\n${this.active.name}|HP: ${this.active.hp}/${this.active.mhp}|MP: ${this.active.mp}/${this.active.mmp}`);
         //buff debuffs
         //death check
@@ -163,8 +163,10 @@ export class Battle {
     static async onActionSelect(): Promise<any> {
         this._status = 'input'
         try {
-            let command = await this.openCommandSelect()
-            let action = new Objects.Action(this.getSubject(), command.selectedIndex)
+            let command = await this.subject().selectCommand()
+            let skills = this.subject().getSkillsFromCommand(command)
+            //if(skills.length > 1);
+            let action = new Objects.Action(this.subject(), command.selectedIndex)
             let targets = await action.getTargets()
             action.setTargets(targets)
             //console.log(`${action.user.name} uses ${action.skill.name} on ${action.targets[0].name}`);
@@ -202,7 +204,7 @@ export class Battle {
     static onTurnEnd(): void {
         // buffs debuffs
         // bleeding 
-        if(!this.getSubject().isGuarding) this.getSubject().setState('wait');
+        if(!this.subject().isGuarding) this.subject().setState('wait');
         this.setNextSubject()
         this._status = 'TurnStart'
     }

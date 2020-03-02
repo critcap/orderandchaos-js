@@ -133,21 +133,46 @@ export namespace Objects {
             return (this instanceof Enemy) ? Game.Heroes : Game.Enemies;
         }
 
-        makeAction(id: number): Action {
-            return new Action(this, id)
+        makeAction(): Action {
+            let action = new Action();
+        }
+
+        async selectCommand(): Promise<any> {
+            let options = {}
+            return Graphics.singleLineMenu(this.getCommands(), options).promise
+        }
+        
+        getCommands(): Array<string> {
+            let commands = [Graphics.str('Attack')]
+            this.hasUsableSpells() ? commands.push('Spells'): null; 
+            this.hasUsableItems() ? commands.push('Items'): null;
+            commands.push('Guard');
+            return commands  
+        }
+
+        hasUsableItems(): boolean {
+            return false
+        }
+
+        hasUsableSpells(): boolean {
+            return false
         }
 
         getSkillsFromCommand(command: string): Array<number> {  
-            switch (command) {
-                case 'attack':
-                   
-                    break;
-            
+            switch (command.toUpperCase()) {
+                case 'GUARD':
+                    return [0];
+                case 'ATTACK':
+                    return [1];  
+                case 'SPELLS':
+                    return [1231]
+                case 'ITEMS':
+                    return [0,9]    
                 default:
+                    return [0]
                     break;
             }
         }
-
     }
 
     export class Hero extends Battler {
@@ -163,28 +188,18 @@ export namespace Objects {
 
     export class Action {
         _user: Battler
-        _skill: Skill
+        _skill: number
         _targets: Array<Battler>
 
         constructor(user: Battler, id: number) {
             this._user = user
-            this._skill = new Skill(this.fetchSkillFromID(id))
+            this._skill = 0
             this._targets = []
             
         }
 
-        fetchSkillFromID(id: number): Skill {
-            //FIXME  Placeholder
-            switch (id) {
-                case 0:
-                    return {id: 0, name: 'Attack', damage: {type: 1, formular: 'a.wdmg* 1.0', element: 1, variance: 10}, rt: 50, scope: 1, cost: 0, costType: 'Mana', tooltip: '', state: 'attack'}
-                    break;
-            
-                default:
-                    return {id: 1, name: 'Guard', damage: {type: 0, formular: '', element: 1, variance: 10}, rt: 25, scope: 0, cost: 0, costType: 'Mana', tooltip: '', state: 'guard'}
-                    break;
-            }
-        }
+        skill(): {};
+
         
         async getTargets(): Promise<any> {
             let possibleTargetsNames: Array<string> = this.getPossibleTargets().map(target => target.name)
@@ -201,7 +216,7 @@ export namespace Objects {
         }
 
         getPossibleTargets(): Array<Battler> {
-            switch (this._skill.scope) {
+            switch (this.skill().scope) {
                 //FIXME only 2 for testing
                 case 0:
                     return [this._user]
@@ -228,15 +243,15 @@ export namespace Objects {
         }
 
         isDamageAbility(): boolean {
-           return this._skill.damage.type !== 0
+           return this.skill().damage.type !== 0
         }
 
         perform(): void {
             let user = this._user
-            user.setState(this._skill.state)
+            user.setState(this.skill().state)
             let critical = this.isCriticalHit()
             let targetCount = this._targets.length
-            user.setQt(this._skill.rt)
+            user.setQt(this.skill().rt)
             if(this.isDamageAbility()){
                 for (let i = 0; i < targetCount; i++) {
                     let target = this._targets[i]
@@ -264,11 +279,11 @@ export namespace Objects {
         }
 
         evalSkillFormular(a?: Battler, b?: Battler): number {
-            return eval(this._skill.damage.formular)
+            return eval(this.skill().damage.formular)
         }
 
         calcDamageVariance(): number {
-           let int = this._skill.damage.variance
+           let int = this.skill().damage.variance
            return Random.int(-int, int)/100 + 1
         }
     }
@@ -278,6 +293,17 @@ export namespace Objects {
         formular: string
         element: number
         variance: number
+    }
+
+    export interface DataSkill {
+        name: string
+        damage: Damage
+        rt: number
+        scope: number
+        cost: number
+        costType: string
+        tooltip: string
+        state: string
     }
 
     export class Skill {
@@ -291,8 +317,8 @@ export namespace Objects {
         tooltip: string
         state: string
 
-        constructor(data: Skill){
-            this.id = data.id
+        constructor(id: number, data: DataSkill){
+            this.id = id
             this.name = data.name
             this.damage = data.damage
             this.rt = data.rt

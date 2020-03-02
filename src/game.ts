@@ -1,6 +1,7 @@
 import {Objects} from './objects';
 import {Scenes} from './scenes';
 import {Battle} from './battle'
+import {Data} from './data'
 
 const rndNames = require('fantasy-names')
 
@@ -47,12 +48,15 @@ export class Game {
     static Enemies: Array<Objects.Enemy> = []
 
     static async run(): Promise<void> {
-        Graphics.clear()     
-        let hero = this.startCharacterCreation()
-        let enemy = this.createEncounter()   
-        await Promise.all([hero, enemy])
-        Battle.setup()
-        this.requestUpdate()       
+        Graphics.clear() 
+        await Data.loadDatabases()
+        console.log(Data.Skills);
+        
+        // let hero = this.startCharacterCreation()
+        // let enemy = this.createEncounter()   
+        // await Promise.all([hero, enemy])
+        // Battle.setup()
+        // this.requestUpdate()       
     }
 
     static update(): void {
