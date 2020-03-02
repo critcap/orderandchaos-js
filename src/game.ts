@@ -11,12 +11,8 @@ export class Utils{
         return Math.min(Math.max(input, min), max);
     };
 
-    static add(input: Array<any>, item: any): Array<any> {
-        let output = [item]
-        input.forEach(ele => {
-            output.push(ele)
-        })
-        return output;
+    static arrayShove(input: Array<any>, item: any): Array<any> {
+        return [item].concat(input)
     }
 }
 
@@ -107,7 +103,7 @@ export class Game {
         this._previousTick = now
         this.update();
         let wait = this._waitingDurationMs
-        this._waitingDurationMs = 0
+        this.stopWait()
         setTimeout(() => this.requestUpdate(), this._tickLengthMs + wait)  
     }
 
@@ -116,7 +112,7 @@ export class Game {
     }
 
     static requestWait(duration: number): void {
-        if(!this.isWaiting()) this._waitingDurationMs += duration;        
+        if(!this.isWaiting()) this._waitingDurationMs = duration;        
     }
 
     static stopWait(): void {

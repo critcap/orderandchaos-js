@@ -137,6 +137,17 @@ export namespace Objects {
             return new Action(this, id)
         }
 
+        getSkillsFromCommand(command: string): Array<number> {  
+            switch (command) {
+                case 'attack':
+                   
+                    break;
+            
+                default:
+                    break;
+            }
+        }
+
     }
 
     export class Hero extends Battler {

@@ -163,7 +163,7 @@ export class Battle {
     static async onActionSelect(): Promise<any> {
         this._status = 'input'
         try {
-            let command = await Graphics.singleLineMenu(['Attack', 'Guard']).promise;   
+            let command = await this.openCommandSelect()
             let action = new Objects.Action(this.getSubject(), command.selectedIndex)
             let targets = await action.getTargets()
             action.setTargets(targets)
@@ -174,6 +174,14 @@ export class Battle {
             Game.shutdown()
         }  
     }    
+
+    static async openCommandSelect(): Promise<any> {
+        let commands = ['^wAttack^', 'Guard']
+        let options = {}
+        return Graphics.singleLineMenu(commands, options).promise
+    }
+    
+    
 
     static startActionStack(actions: Array<Objects.Action>): void {
         this._status = 'PerformActions'
