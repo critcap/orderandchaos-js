@@ -1,11 +1,12 @@
 ---
 - name: 'Guard'
+  type: ''
   damage: 
     type: 0
     formular: ''
     element: 0
     variance: 10
-  rt: 0
+  rt: 25
   scope: 0
   cost: 0
   costType: ''
@@ -13,14 +14,29 @@
   state: 'guard'  
 
 - name: 'Attack'
+  type: ''
   damage: 
     type: 1
     formular: 'a.wdmg * 1.0'
     element: 0
-    variance: 10
-  rt: 0
+    variance: 30
+  rt: 50
   scope: 1
   cost: 0
   costType: ''
   tooltip: ''
   state: 'attack'  
+
+- name: 'Firebolt'
+  type: 'spell'
+  damage:
+    type: 2
+    formular: 'a.mdmg * 1.0'
+    element: 1
+    variance: 10
+  rt: 50
+  scope: 1
+  cost: 5
+  costType: 'mp'
+  tooltip: ''  
+  state: 'cast'

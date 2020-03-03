@@ -164,8 +164,6 @@ export class Battle {
         this._status = 'input'
         try {
             let action = await this.subject().makeAction()
-            console.log(action);
-            
             this.startActionStack([action])
         } catch (error) {
             console.log(error);
@@ -183,7 +181,7 @@ export class Battle {
             this._actionStack[0].perform()
             this._actionStack.pop()
             
-            Game.requestWait(90000)
+            Game.requestWait(1000)
         }
         else if(this._actionStack.length === 0) {
             this._status = 'TurnEnd'

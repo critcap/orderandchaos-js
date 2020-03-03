@@ -51,7 +51,7 @@ export class Game {
         let hero = this.startCharacterCreation()
         let enemy = this.createEncounter()   
         await Promise.all([hero, enemy])
-        Battle.setup()
+        Battle.setup()  
         this.requestUpdate()       
     }
 
