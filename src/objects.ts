@@ -56,6 +56,7 @@ export namespace Objects {
         isCasting(): boolean {
             return this._state === 'cast'
         }
+
         isWaiting(): boolean {
             return this._state === 'wait'
         }
@@ -63,7 +64,6 @@ export namespace Objects {
         skills(): Array<Skill> {
             return this._skills.map(skill => Data.Skills[skill])
         }
-
 
         setState(state: string): void {
             this._state = state
@@ -255,11 +255,159 @@ export namespace Objects {
     export class Hero extends Battler {
         _exp?: number
         _level?: number
-    }
 
+        async makeAction(): Promise<Action> {
+            let action = new Action(this)
+            await this.selectCommand(action)   
+            return action
+        }
+
+        async selectCommand(action: Action): Promise<void> {
+            let commands = this.getCommands()
+            let options = {}
+            let command = await Graphics.singleLineMenu(commands, options).promise
+            let skillIDs = this.getSkillsFromCommand(command.selectedText)
+            await this.selectSkill(skillIDs, action)       
+        }
+
+        async selectSkill(list: Array<number>, action: Action): Promise<void> {      
+            let id = list[0]
+            if(!this.isBasicCommand(list)){
+                let items = this.createSkillSelectItems(list)
+                let options = {
+                    cancelable: true,
+                    itemMaxWidth: Graphics.width / 2
+                }
+                let result = await Graphics.gridMenu(items, options).promise
+                result.selectedIndex != undefined ? id =list[result.selectedIndex]: 
+                result.canceled === true ? await this.selectCommand(action): null;
+            }    
+            action.setSkillId(id)
+            await this.selectTarget(list, action); 
+        }
+
+        isBasicCommand(ids: Array<number>): boolean {
+            return ids[0] === 0 ? true : ids[0] === 1 ? true : false;
+        }
+
+        createSkillSelectItems(list: Array<number>): Array<string> {
+            return list.map(id => {
+                let skill = Data.Skills[id]
+                return Graphics.str(`^b${skill.name}^ MP: ^m${skill.cost}^`)
+            })
+        }
+        
+        getCommands(): Array<string> {
+            let commands = [Graphics.str('Attack')]
+            this.hasUsableSpells() ? commands.push('Spells'): null; 
+            this.hasUsableItems() ? commands.push('Items'): null;
+            commands.push('Guard');
+            return commands  
+        }
+
+        async selectTarget(list: Array<number>, action: Action): Promise<void> {
+            let targets = this.getScopeTargets(action)
+            let targetNames = this.createTargetSelectItems(targets)
+            
+            let options = {
+                cancelable: true, 
+                selectedStyle: Graphics.bgDefaultColor()
+            }
+            
+            let result = await Graphics.singleColumnMenu(targetNames, options).promise;
+            result.canceled == true    ?    !this.isBasicCommand(list) ? 
+            await this.selectSkill(list, action): await this.selectCommand(action): null;
+            
+            let index = result.selectedIndex;
+            if(index != undefined) action.setTargets([this.getOpponents()[index]])         
+        }
+
+        getScopeTargets(action: Action): Array<Battler> {
+            return  Math.sign(action.skill().scope) < 0 ? action.user().getFriends(): 
+                    Math.sign(action.skill().scope) > 0 ? action.user().getOpponents():
+                    [action.user()];
+        }
+
+        createTargetSelectItems(list: Array<Battler>): Array<string> {
+            return list.map(target => {
+                return (target.isAlive() == true) ? 
+                Graphics.str(`${target.name} HP: ^g${target.hp}^`):
+                Graphics.str(`${target.name} ^rDEAD^`);
+            })
+        }
+
+        hasUsableItems(): boolean {
+            return false
+        }
+
+        hasUsableSpells(): boolean {     
+            return this.spells().length > 0;
+        }
+
+        spells(): Array<Skill> {
+            return this.skills().filter(skill => skill.type === 'spell')
+        }
+
+        spellIDs(): Array<number> {
+            return this.spells().map(skill => skill.id)
+        }
+
+        getSkillsFromCommand(command: string): Array<number> {  
+            switch (command.toUpperCase()) {
+                case 'GUARD':
+                    return [0];
+                case 'ATTACK':
+                    return [1];  
+                case 'SPELLS':
+                    return this.spellIDs()
+                // case 'ITEMS':
+                //     return [0,9]    
+                default:
+                    return [0]
+                    break;
+            }
+        }
+    }
+    
     export class Enemy extends Battler {
         setName(input: string): void {
             this.name = input
+        }
+
+        async makeAction(): Promise<Action> {
+            let action = new Action(this) 
+            console.log(this.makeTargetRatings())
+            return action
+        }
+
+        makeTargetRatings(): Array<number> {
+            return this.getOpponents().map(target => {
+                return this.getHPRating(target) + this.getStatusRating(target) + this.getEquipRating(target) + this.getCasterRating(target)
+            })
+
+        }
+
+        getHPRating(target: Battler): number {
+            let x = target.hp * 128 / target.mhp
+            console.log(x);     
+            return x
+        }
+        
+        getStatusRating(target: Battler): number {  
+            return 0
+        }
+        
+        getEquipRating(target: Battler): number {  
+            return 0
+        }
+
+        getCasterRating(target: Battler): number {
+            let x = (target.mmp / target.mp)
+            x /= 16
+            x *= target.spells().length
+            x *= target.spells().filter(skill => skill.cost < target.mp).length > 0 ? 1: 0;
+            console.log(x);     
+            return x
         }
     }
 
@@ -379,56 +527,51 @@ export namespace Objects {
         }
     }
 
-    interface Damage {
+    interface _damage {
         type: number
         formular: string
         element: number
         variance: number
     }
 
-    export interface DataSkill {
-        name: string
-        type: string
-        damage: Damage
-        rt: number
-        scope: number
-        cost: number
-        costType: string
-        tooltip: string
-        state: string
+    export interface _dataSkill {
+        name?: string
+        type?: string
+        damage?: _damage
+        rt?: number
+        scope?: number
+        cost?: number
+        costType?: string
+        tooltip?: string
+        state?: string
     }
 
     export class Skill {
-        id: number
-        type: string
-        name: string
-        damage: Damage
-        rt: number
-        scope: number
-        cost: number
-        costType: string
-        tooltip: string
-        state: string
+        id: number = 0
+        type: string = ''
+        name: string = ''
+        damage: _damage = {type: 0, formular: '', element: 0, variance: 0}
+        rt: number = 0
+        scope: number = 0
+        cost: number = 0
+        costType: string = ''
+        tooltip: string = ''
+        state: string = ''
 
-        constructor(id: number, data: DataSkill){
+        constructor(id: number, data: _dataSkill){
             this.id = id
-            this.type = data.type
-            this.name = data.name
-            this.damage = data.damage
-            this.rt = data.rt
-            this.scope = data.scope
-            this.cost = data.cost
-            this.costType = data.costType
-            this.tooltip = data.tooltip
-            this.state = data.state
+            for (let key in data) {
+                //@ts-ignore
+                this[key] = data[key]
+            }
         }
 
         isPhysical(): boolean {
-            return this.damage.type === 1
+            return this.damage.type === Data.Config.damageTypes.physical
         }
 
         isMagical(): boolean {
-            return this.damage.type === 2
+            return this.damage.type === Data.Config.damageTypes.magical
         }
     }
 }

@@ -181,7 +181,7 @@ export class Battle {
             this._actionStack[0].perform()
             this._actionStack.pop()
             
-            Game.requestWait(1000)
+            Game.requestWait(1000000)
         }
         else if(this._actionStack.length === 0) {
             this._status = 'TurnEnd'

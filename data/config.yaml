@@ -1,0 +1,11 @@
+---
+elements:
+  fire: 1
+  ice: 2
+  lightning: 3
+  holy: 4
+  dark: 5
+damageTypes:
+  physical: 1
+  magical: 2
+  divine: 3   

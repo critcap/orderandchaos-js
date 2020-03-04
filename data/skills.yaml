@@ -36,7 +36,7 @@
     variance: 10
   rt: 50
   scope: 1
-  cost: 5
+  cost: 4
   costType: 'mp'
   tooltip: ''  
   state: 'cast'
