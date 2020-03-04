@@ -12,19 +12,19 @@ export namespace Objects {
         id: number = 0
         name: string = ''
         
-        private _state: string = ''
-        private _vit: number = 0 
-        private _str: number = 0
-        private _dex: number = 0
-        private _int: number = 0
-        private _fth: number = 0
-        private _wei: number = 0
+        protected _state: string = ''
+        protected _vit: number = 0 
+        protected _str: number = 0
+        protected _dex: number = 0
+        protected _int: number = 0
+        protected _fth: number = 0
+        protected _wei: number = 0
 
-        private _hp: number = 0
-        private _mp: number = 0
-        private _qt: number = 0
+        protected _hp: number = 0
+        protected _mp: number = 0
+        protected _qt: number = 0
 
-        private _skills: Array<number> = [0,1,2]
+        protected _skills: Array<number> = [0,1,2]
         
         get mhp(): number {return this._vit * 8}
         get hp(): number {return this._hp}
@@ -255,8 +255,8 @@ export namespace Objects {
     }
 
     export class Hero extends Battler {
-        _exp?: number
-        _level?: number  
+        private _exp?: number
+        private _level?: number  
     }
     
     export class Enemy extends Battler {
@@ -376,7 +376,7 @@ export namespace Objects {
                     critical ? result *= 1.5 : null;
                     if(target.isGuarding() && this.skill().isPhysical()) result *= 0.5; 
                     result = Math.round(result);
-                    BattleLog.addHit(target.id, false, critical, result)           
+                    BattleLog.addHit({target: target.id, missed: false, critical: critical, result: result})           
                     this.applyDamage(target, result, critical)
                 }   
             }  
