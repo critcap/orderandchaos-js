@@ -1,8 +1,9 @@
 import { Game, Graphics } from "./game"
-import { Battle} from "./battle"
+import { Battle } from "./battle"
 import { Utils } from "./game"
 import { Random } from "./game"
 import { Data } from "./data"
+import { BattleLog } from "./battlelog"
 
 
 export namespace Objects {
@@ -22,6 +23,7 @@ export namespace Objects {
         private _hp: number = 0
         private _mp: number = 0
         private _qt: number = 0
+
         private _skills: Array<number> = [0,1,2]
         
         get mhp(): number {return this._vit * 8}
@@ -254,119 +256,7 @@ export namespace Objects {
 
     export class Hero extends Battler {
         _exp?: number
-        _level?: number
-
-        async makeAction(): Promise<Action> {
-            let action = new Action(this)
-            await this.selectCommand(action)   
-            return action
-        }
-
-        async selectCommand(action: Action): Promise<void> {
-            let commands = this.getCommands()
-            let options = {}
-            let command = await Graphics.singleLineMenu(commands, options).promise
-            let skillIDs = this.getSkillsFromCommand(command.selectedText)
-            await this.selectSkill(skillIDs, action)       
-        }
-
-        async selectSkill(list: Array<number>, action: Action): Promise<void> {      
-            let id = list[0]
-            if(!this.isBasicCommand(list)){
-                let items = this.createSkillSelectItems(list)
-                let options = {
-                    cancelable: true,
-                    itemMaxWidth: Graphics.width / 2
-                }
-                let result = await Graphics.gridMenu(items, options).promise
-                result.selectedIndex != undefined ? id =list[result.selectedIndex]: 
-                result.canceled === true ? await this.selectCommand(action): null;
-            }    
-            action.setSkillId(id)
-            await this.selectTarget(list, action); 
-        }
-
-        isBasicCommand(ids: Array<number>): boolean {
-            return ids[0] === 0 ? true : ids[0] === 1 ? true : false;
-        }
-
-        createSkillSelectItems(list: Array<number>): Array<string> {
-            return list.map(id => {
-                let skill = Data.Skills[id]
-                return Graphics.str(`^b${skill.name}^ MP: ^m${skill.cost}^`)
-            })
-        }
-        
-        getCommands(): Array<string> {
-            let commands = [Graphics.str('Attack')]
-            this.hasUsableSpells() ? commands.push('Spells'): null; 
-            this.hasUsableItems() ? commands.push('Items'): null;
-            commands.push('Guard');
-            return commands  
-        }
-
-        async selectTarget(list: Array<number>, action: Action): Promise<void> {
-            let targets = this.getScopeTargets(action)
-            let targetNames = this.createTargetSelectItems(targets)
-            
-            let options = {
-                cancelable: true, 
-                selectedStyle: Graphics.bgDefaultColor()
-            }
-            
-            let result = await Graphics.singleColumnMenu(targetNames, options).promise;
-            result.canceled == true    ?    !this.isBasicCommand(list) ? 
-            await this.selectSkill(list, action): await this.selectCommand(action): null;
-            
-            let index = result.selectedIndex;
-            if(index != undefined) action.setTargets([this.getOpponents()[index]])         
-        }
-
-        getScopeTargets(action: Action): Array<Battler> {
-            return  Math.sign(action.skill().scope) < 0 ? action.user().getFriends(): 
-                    Math.sign(action.skill().scope) > 0 ? action.user().getOpponents():
-                    [action.user()];
-        }
-
-        createTargetSelectItems(list: Array<Battler>): Array<string> {
-            return list.map(target => {
-                return (target.isAlive() == true) ? 
-                Graphics.str(`${target.name} HP: ^g${target.hp}^`):
-                Graphics.str(`${target.name} ^rDEAD^`);
-            })
-        }
-
-        hasUsableItems(): boolean {
-            return false
-        }
-
-        hasUsableSpells(): boolean {     
-            return this.spells().length > 0;
-        }
-
-        spells(): Array<Skill> {
-            return this.skills().filter(skill => skill.type === 'spell')
-        }
-
-        spellIDs(): Array<number> {
-            return this.spells().map(skill => skill.id)
-        }
-
-        getSkillsFromCommand(command: string): Array<number> {  
-            switch (command.toUpperCase()) {
-                case 'GUARD':
-                    return [0];
-                case 'ATTACK':
-                    return [1];  
-                case 'SPELLS':
-                    return this.spellIDs()
-                // case 'ITEMS':
-                //     return [0,9]    
-                default:
-                    return [0]
-                    break;
-            }
-        }
+        _level?: number  
     }
     
     export class Enemy extends Battler {
@@ -474,6 +364,8 @@ export namespace Objects {
             user.setState(this.skill().state)
             user.setQt(this.skill().rt)  
             this.applySkillCosts()  
+            BattleLog.setSkill(this._skillId)
+            BattleLog.setTargets(this._targets)
             if(this.isDamageAbility()){
                 let targetCount = this._targets.length
                 for (let i = 0; i < targetCount; i++) {
@@ -482,8 +374,10 @@ export namespace Objects {
                     let result: number = this.evalSkillFormular(user, target);      
                     result *= this.getDamageVariance();  
                     critical ? result *= 1.5 : null;
-                    if(target.isGuarding() && this.skill().isPhysical()) result *= 0.5;            
-                    this.applyDamage(target, Math.round(result), critical)
+                    if(target.isGuarding() && this.skill().isPhysical()) result *= 0.5; 
+                    result = Math.round(result);
+                    BattleLog.addHit(target.id, false, critical, result)           
+                    this.applyDamage(target, result, critical)
                 }   
             }  
         }

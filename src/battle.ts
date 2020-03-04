@@ -2,6 +2,7 @@ import {Game} from './game'
 import {Objects} from './objects'
 import {Graphics} from './game'
 import {PARTY_SIZE} from './game'
+import { BattleLog } from "./battlelog"
 
 export class Battle {
     private static _status: string = ''
@@ -16,13 +17,17 @@ export class Battle {
     }
 
     static setup(): void {
+        this.initMembers()
+        BattleLog.setup()
+        this.Start()
+    }
+
+    static initMembers(): void {
         this._status = 'setup'
         this._turnCount = 0
         this._actionStack = []
         //@ts-ignore
-        this._subject = undefined
-        this._status = 'Start'
-        this.Start()
+        this._subject = undefined   
     }
 
     static Start(): void {
@@ -30,23 +35,12 @@ export class Battle {
         this._status = 'Start'
     }
 
-    static onStart(): void {
-        this.refreshAllQt()
-        this.getAllBattlersAlive().forEach(battler => {
-            battler.setState('wait')            
-        })
-        this.setNextSubject()
-        //on Start effects
-        //on Start events
-        this._status = 'TurnStart'
-    }
-
     static getAllBattlers(): Array<Objects.Battler> {
         return Game.Heroes.concat(Game.Enemies)
     }
 
     static getAllBattlersAlive(): Array<Objects.Battler> {
-        return  this.getAllHeroesAlive().concat(this.getAllEnemiesAlive())
+        return this.getAllHeroesAlive().concat(this.getAllEnemiesAlive())
     }
 
     static getHeroesBattlemember(): Array<Objects.Hero> {
@@ -139,8 +133,7 @@ export class Battle {
         return false
     }
 
-
-    //placeholder
+    //placeholder cuz this is shit hehehehehhehe
 
     static checkAllDead(unit: Array<Objects.Battler>): boolean {
         let dead = unit.filter(battler => {
@@ -149,8 +142,20 @@ export class Battle {
         return (dead.length === unit.length)? true: false;
     }
 
+    static onStart(): void {
+        this.refreshAllQt()
+        this.getAllBattlersAlive().forEach(battler => {
+            battler.setState('wait')            
+        })
+        this.setNextSubject()
+        //on Start effects
+        //on Start events
+        this._status = 'TurnStart'
+    }
+
     static onTurnStart(): void {
         Graphics.clear()
+        BattleLog.onTurnStart()
         Graphics(`\nIts ${this.subject().name}'s turn`);
         Graphics(`\n${this.active.name}|HP: ${this.active.hp}/${this.active.mhp}|MP: ${this.active.mp}/${this.active.mmp}`);
         //buff debuffs
@@ -191,6 +196,11 @@ export class Battle {
     static onTurnEnd(): void {
         // buffs debuffs
         // bleeding 
+        BattleLog.onTurnEnd()
+        this.endTurn()
+    }
+
+    static endTurn(): void {
         if(!this.subject().isGuarding) this.subject().setState('wait');
         this.setNextSubject()
         this._status = 'TurnStart'
@@ -225,4 +235,3 @@ export class Battle {
     }
 
 }
-
