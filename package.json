@@ -4,7 +4,9 @@
   "description": "",
   "main": "index.js",
   "dependencies": {
+    "@typescript-eslint/eslint-plugin": "^2.22.0",
     "@typescript-eslint/parser": "^2.22.0",
+    "eslint": "^6.8.0",
     "js-yaml": "^3.13.1",
     "random": "^2.1.1",
     "terminal-kit": "^1.33.15",
