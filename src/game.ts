@@ -4,8 +4,6 @@ import {Battle} from './battle'
 import {Data} from './data'
 import { BattleLog } from './battlelog';
 
-const rndNames = require('fantasy-names')
-
 export class Utils{
     static clamp(input: number, min: number, max: number): number{
         return Math.min(Math.max(input, min), max);
@@ -70,10 +68,11 @@ export class Game {
     }
 
     static async startCharacterCreation(): Promise<void> {
+        let names = await Data.fetchNames(PARTY_SIZE, 'heroes')
         for (let i = 0; i < PARTY_SIZE; i++) {
             try {
                 let Hero = new Objects.Hero()
-                let name = await Graphics.inputField({default: rndNames('dragon age', 'humans', 1)[0]}).promise
+                let name = await Graphics.inputField({default: names[i]}).promise
                 Hero.setName(name)
                 Graphics.nextLine(1)
                 await Hero.setAttributes()
@@ -89,7 +88,7 @@ export class Game {
 
     static async createEncounter(): Promise<void> {
         let enemyCount = Random.int(2,4)
-        let enemyNames = rndNames('Pathfinder', 'goblins', enemyCount).map( (name:string)=> name[0].toUpperCase() + name.slice(1))
+        let enemyNames = await Data.fetchNames(enemyCount, 'enemies')
         for (let i = 0; i < enemyCount; i++) {
             let Enemy = new Objects.Enemy()
             Enemy.setName(enemyNames[i])

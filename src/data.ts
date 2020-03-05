@@ -1,6 +1,8 @@
 import {Objects} from './objects'
+import {Random} from './game'
 
-interface _config {
+
+ interface _config {
     elements: {
         fire: number,
         ice: number,
@@ -24,6 +26,7 @@ export class Data {
     static Skills: Array<Objects.Skill> = []
     static Items: Array<any>
 
+
     static async loadDatabases(): Promise<any> {
         await this.loadConfigData()
         let skills = this.loadDataSkills()
@@ -37,6 +40,20 @@ export class Data {
     static  async loadDataSkills(): Promise<void>{ 
         let skills = await this.loadDataFile('skills')
         this.processDataSkills(skills)
+    }
+
+    static async loadDataNames(): Promise<any> {
+        return this.loadDataFile('names')
+    }
+
+    static async fetchNames(count: number, type: string): Promise<Array<string>> {
+        let names = await this.loadDataNames()
+        let nameIndex: Array<number> = []
+        while (nameIndex.length < count) {
+            let rnd = Random.int(0, names[type].length - 1) 
+            nameIndex.push(nameIndex.includes(rnd) ? null : rnd)
+        }
+        return nameIndex.map(index => names[type][index])
     }
 
     static processDataSkills(data: Array<Objects._dataSkill>): void {
