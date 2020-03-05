@@ -7,5 +7,6 @@
         "**/.svn": false,
         "**/CVS": false,
         "README.md": true
-    }
+    },
+    "eslint.enable": false
 }
