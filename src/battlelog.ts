@@ -16,11 +16,13 @@ class Turn {
         hits: []
     }
 
-    get dmg(): number { 
-        return this._action.hits.reduce((a: number, b: number) => a + b, 0)
-    }
+    get index(): number {return BattleLog.getAllTurns().indexOf(this)} 
 
-    setSubjectID(subject: number): void {
+    get subjectId(): number {return this._subjectID}
+
+    get dmg(): number {return this._action.hits.reduce((a: number, b: number) => a + b, 0)}
+
+    setSubjectID(subject: number): void { 
         this._subjectID = subject
     }
 
@@ -29,7 +31,7 @@ class Turn {
     }
 
     setSkill(skill: number): void {
-        this._action.skill = skill
+        this._action.skillID = skill
     }
 
     addHit(hit: _hit): void {
@@ -63,9 +65,9 @@ export class BattleLog {
     }
 
     static onTurnStart(): void {
-        let turn = new Turn()
-        turn.setSubjectID(Battle.subject().id)
-        this._currentTurn.push(new Turn())
+        let turn = new Turn() 
+        this._currentTurn.push(new Turn());
+        this.currentTurn().setSubjectID(Battle.subject().id)
     }
 
     static onTurnEnd(): void {
@@ -92,15 +94,36 @@ export class BattleLog {
 
     // Battle metrics stuff for enemy ai
 
-    static getTurn(id: number): Turn {
-        return this._turns[id]
+    static getBattlerAllTurnsIndex(battler: Objects.Battler | number): Array<number> {
+        return this.getBattlerAllTurns(battler).map(turn => turn.index)
     }
 
-    static getTurnXToY(x: number, y: number): Array<Turn> {   
-        return this._turns.slice(x--, y--)
+    static getBattlerLastTurn(battler: Objects.Battler | number): Turn {    
+        return this.getBattlerAllTurns(battler)[Math.min(...this.getBattlerAllTurnsIndex(battler))]
+    }
+    
+    static getBattlerFirstTurn(battler: Objects.Battler | number): Turn {
+        return this.getBattlerAllTurns(battler)[Math.max(...this.getBattlerAllTurnsIndex(battler))]
+    }
+
+    static getBattlerTurn(battler: Objects.Battler | number, id: number): Turn {   
+        return this.getBattlerAllTurns(battler)[id]
+    }
+
+    static getBattlerAllTurns(battler: Objects.Battler | number): Array<Turn> {
+        let bID: number = battler instanceof Objects.Battler ? battler.id : battler;
+        return this.getAllTurns().filter(turn => turn.subjectId === bID)
     }
 
     static getAllTurns(): Array<Turn> {   
         return this._turns;
+    }
+    
+    static getTurn(id: number): Turn {
+        return this.getAllTurns()[id];
+    }
+
+    static getTurnXToY(x: number, y: number): Array<Turn> {   
+        return this.getAllTurns().slice(x--, y--)
     }
 }

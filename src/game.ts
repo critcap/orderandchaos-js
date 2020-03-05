@@ -2,6 +2,7 @@ import {Objects} from './objects';
 import {Scenes} from './scenes';
 import {Battle} from './battle'
 import {Data} from './data'
+import { BattleLog } from './battlelog';
 
 const rndNames = require('fantasy-names')
 
@@ -25,7 +26,8 @@ Graphics.on('key', (name:any, data:any) => {
             Game.shutdown()
             break;
         case "#":
-            Graphics.eraseLine().previousLine(1).eraseLine()
+            //Graphics.eraseLine().previousLine(1).eraseLine()
+            BattleLog.getAllTurns().forEach(turn => console.log(turn))
             break;
         default:     
             break;

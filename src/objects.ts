@@ -279,7 +279,6 @@ export namespace Objects {
 
         getHPRating(target: Battler): number {
             let x = target.hp * 128 / target.mhp
-            console.log(x);     
             return x
         }
         
@@ -295,8 +294,7 @@ export namespace Objects {
             let x = (target.mmp / target.mp)
             x /= 16
             x *= target.spells().length
-            x *= target.spells().filter(skill => skill.cost < target.mp).length > 0 ? 1: 0;
-            console.log(x);     
+            x *= target.spells().filter(skill => skill.cost < target.mp).length > 0 ? 1: 0;  
             return x
         }
     }
