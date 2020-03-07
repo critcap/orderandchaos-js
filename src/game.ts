@@ -7,10 +7,6 @@ import { BattleLog } from './battlelog';
 export class Utils{
     static clamp(input: number, min: number, max: number): number{
         return Math.min(Math.max(input, min), max);
-    };
-
-    static arrayShove(input: Array<any>, item: any): Array<any> {
-        return [item].concat(input)
     }
 }
 
@@ -51,8 +47,18 @@ export class Game {
         let hero = this.startCharacterCreation()
         let enemy = this.createEncounter()   
         await Promise.all([hero, enemy])
-        Battle.setup()  
-        this.requestUpdate()       
+        this.Heroes[1].displayInventory()
+        this.Heroes[1].removeItems(0, 100)
+        this.Heroes[1].displayInventory()
+        this.Heroes[1].gainItems(0, 100)
+        this.Heroes[1].displayInventory()
+        this.Heroes[1].gainItems(0, 100)
+        this.Heroes[1].displayInventory()
+        this.Heroes[1].removeItems(0, 99)
+        this.Heroes[1].displayInventory()
+        this.Heroes[1].displayInventory()
+        // Battle.setup()  
+        // this.requestUpdate()       
     }
 
     static update(): void {

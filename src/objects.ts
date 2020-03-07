@@ -4,6 +4,8 @@ import { Utils } from "./game"
 import { Random } from "./game"
 import { Data } from "./data"
 import { BattleLog } from "./battlelog"
+import { isDeepStrictEqual } from "util"
+import { stringify } from "querystring"
 
 
 export namespace Objects {
@@ -257,6 +259,32 @@ export namespace Objects {
     export class Hero extends Battler {
         private _exp?: number
         private _level?: number  
+        private _inventory: any = {}
+
+        async gainItems(itemID: number, count: number): Promise<void> {
+            let item = Data.getItem(itemID);
+            let current = this._inventory[itemID] ? this._inventory[itemID]: 0;
+            this._inventory[itemID] = Utils.clamp(current + count, 0, item.maxSize)
+        }
+
+        displayInventory(): void {
+            console.log(this._inventory);  
+        }
+
+        removeItems(itemID: number, count: number): void {
+            if(!this.hasEnoughItems(itemID, count)) return;
+            this._inventory[itemID] -= count;
+            if(this._inventory[itemID] === 0) delete this._inventory[itemID];
+        }
+
+        hasEnoughItems(itemID: number, count: number): boolean {
+            if(this._inventory[itemID] === undefined) return false;
+            return this._inventory[itemID] < count ? false : true
+        }
+
+        checkIfOvercap(item: Item, count: number): boolean {
+            return this._inventory[item.id] + count > item.maxSize;
+        }
     }
     
     export class Enemy extends Battler {
@@ -464,6 +492,31 @@ export namespace Objects {
 
         isMagical(): boolean {
             return this.damage.type === Data.Config.damageTypes.magical
+        }
+    }
+
+    export interface _dataItem {
+        name?: string, 
+        consumable?: boolean,
+        usableInBattle?: boolean ,
+        maxSize?: number,
+        skill?: _dataSkill
+    }
+
+    export class Item {
+        id: number = 0
+        name: string = ''
+        consumable: boolean = false
+        usableInBattle: boolean = false
+        maxSize: number = 0
+        skill: Skill = <Skill>{}
+
+        constructor(id: number, data: _dataItem) {
+            this.id = id;
+            for (let key in data) {
+                //@ts-ignore
+                key !== 'skill' ? this[key] = data[key]: this.skill = new Skill(0, data.skill || {})
+            }
         }
     }
 }

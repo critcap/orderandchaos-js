@@ -24,22 +24,28 @@ export class Data {
 
     static Config: _config;
     static Skills: Array<Objects.Skill> = []
-    static Items: Array<any>
+    static Items: Array<Objects.Item> = []
 
 
     static async loadDatabases(): Promise<any> {
         await this.loadConfigData()
         let skills = this.loadDataSkills()
-        return Promise.all([skills])
+        let items = this.loadDataItems()
+        return Promise.all([skills, items])
     }
 
     static async loadConfigData(): Promise<void> {
         this.Config = await this.loadDataFile('config')
     }
 
-    static  async loadDataSkills(): Promise<void>{ 
+    static async loadDataSkills(): Promise<void>{ 
         let skills = await this.loadDataFile('skills')
         this.processDataSkills(skills)
+    }
+
+    static async loadDataItems(): Promise<void> {
+        let items = await this.loadDataFile('items')
+        this.processDataItems(items)
     }
 
     static async loadDataNames(): Promise<any> {
@@ -56,10 +62,16 @@ export class Data {
         return nameIndex.map(index => names[type][index])
     }
 
+    static processDataItems(data: Array<Objects._dataItem>): void {
+        this.Items = data.map(obj => new Objects.Item(data.indexOf(obj), obj))
+    }
+
+    static getItem(ItemID: number): Objects.Item {
+        return this.Items[ItemID];
+    }
+
     static processDataSkills(data: Array<Objects._dataSkill>): void {
-        this.Skills = data.map(obj => {
-            return new Objects.Skill(data.indexOf(obj), obj)
-        })
+        this.Skills = data.map(obj => new Objects.Skill(data.indexOf(obj), obj))
     }
 
     static async loadDataFile(file: string, encoding: string = 'utf8'): Promise<any> {

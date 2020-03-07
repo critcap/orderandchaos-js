@@ -36,10 +36,12 @@ export class Battle {
     }
 
     static getAllBattlers(): Array<Objects.Battler> {
-        return Game.Heroes.concat(Game.Enemies)
+        //@ts-ignore
+        return Game.Enemies.concat(Game.Heroes)
     }
 
     static getAllBattlersAlive(): Array<Objects.Battler> {
+        //@ts-ignore
         return this.getAllHeroesAlive().concat(this.getAllEnemiesAlive())
     }
 
