@@ -67,7 +67,16 @@ export class Data {
     }
 
     static getItem(ItemID: number): Objects.Item {
-        return this.Items[ItemID];
+        return this.Items[ItemID]
+    }
+
+    static getSkill(SkillID: number): Objects.Skill {
+        return this.Skills[SkillID]
+    }
+
+    static getAllSkills(): Array<any> {
+        //@ts-ignore
+        return this.Skills.concat(this.Items)
     }
 
     static processDataSkills(data: Array<Objects._dataSkill>): void {

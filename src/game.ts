@@ -47,18 +47,8 @@ export class Game {
         let hero = this.startCharacterCreation()
         let enemy = this.createEncounter()   
         await Promise.all([hero, enemy])
-        this.Heroes[1].displayInventory()
-        this.Heroes[1].removeItems(0, 100)
-        this.Heroes[1].displayInventory()
-        this.Heroes[1].gainItems(0, 100)
-        this.Heroes[1].displayInventory()
-        this.Heroes[1].gainItems(0, 100)
-        this.Heroes[1].displayInventory()
-        this.Heroes[1].removeItems(0, 99)
-        this.Heroes[1].displayInventory()
-        this.Heroes[1].displayInventory()
-        // Battle.setup()  
-        // this.requestUpdate()       
+        Battle.setup()  
+        this.requestUpdate()       
     }
 
     static update(): void {
@@ -84,6 +74,7 @@ export class Game {
                 await Hero.setAttributes()
                 Graphics.nextLine(1)
                 Hero.recoverAll()
+                Hero.gainItems(0, 99)
                 this.Heroes.push(Hero)
             } catch (error) {
                console.log(error);
