@@ -75,9 +75,8 @@ export class BattleLog {
         this._currentTurn.pop()
     }
 
-    static setTargets(targets: Array<Objects.Battler>): void {
-        let ids = this.getGroupIDs(targets)
-        this.currentTurn().setTargetIDs(ids)
+    static setTargets(targets: Array<number>): void {
+        this.currentTurn().setTargetIDs(targets)
     }
 
     static setSkill(skill: number): void {

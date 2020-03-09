@@ -8,10 +8,21 @@ import { isDeepStrictEqual } from "util"
 import { stringify } from "querystring"
 
 
+interface _equipment {
+    mainHand: number 
+    offHand: number
+    head: number
+    body: number
+    accessory: number
+    extra1: number
+    extra2: number
+}
+
 export namespace Objects {
 
     export class Battler {
         id: number = 0
+        entityID: number = 0
         name: string = ''
         
         protected _state: string = ''
@@ -26,7 +37,7 @@ export namespace Objects {
         protected _mp: number = 0
         protected _qt: number = 0
 
-        protected _skills: Array<number> = [0,1,2]
+        protected _skills: Array<number> = [0,1]
         
         get mhp(): number {return this._vit * 8}
         get hp(): number {return this._hp}
@@ -36,8 +47,28 @@ export namespace Objects {
         get mdmg(): number {return Math.round(this._int * 1 + this._dex * 0.5)}
         get qt(): number {return this._qt}
 
+        protected _equipment: _equipment = <_equipment>{}
+
+        get mainHand(): Equip {return this.getDataEquip('mainHand')} 
+        get offHand(): Equip {return this.getDataEquip('offHand')} 
+        get head(): Equip {return this.getDataEquip('head')} 
+        get body(): Equip {return this.getDataEquip('body')} 
+        get accessory(): Equip {return this.getDataEquip('accessory')} 
+        get extra1(): Equip {return this.getDataEquip('extra1')} 
+        get extra2(): Equip {return this.getDataEquip('extra2')} 
+
+        getDataEquip(slot: string): Equip {
+            //@ts-ignore
+            return Data.getEquip(this._equipment[slot])
+        }
+
+        setEntityID(): void {
+            this.entityID = Game.getAllEntities().length
+        }
+
         constructor(){
             this.id = this.getFriends().length
+            this.setEntityID()
         }
 
         setName(input: string): void {
@@ -104,7 +135,13 @@ export namespace Objects {
         }
 
         setQt(value: number): void {
-            this._qt = this.getWeight() + value
+            let wei = Random.int(200, 250)
+            this._qt = wei + value
+
+        }
+
+        setQtAbsolut(value: number): void {
+            this._qt = value
         }
 
         revive(): void {
@@ -166,7 +203,7 @@ export namespace Objects {
         async gainItems(itemID: number, count: number): Promise<void> {
             let item = Data.getItem(itemID);
             let current = this._inventory[itemID] ? this._inventory[itemID]: 0;
-            this._inventory[itemID] = Utils.clamp(current + count, 0, item.maxSize)
+            this._inventory[itemID] = Utils.clamp(current + count, 0, item.stacksize)
         }
 
         displayInventory(): void {
@@ -185,7 +222,7 @@ export namespace Objects {
         }
 
         checkIfOvercap(item: Item, count: number): boolean {
-            return this._inventory[item.id] + count > item.maxSize;
+            return this._inventory[item.id] + count > item.stacksize;
         }
 
         getAllItems(): Array<Item> {
@@ -197,7 +234,7 @@ export namespace Objects {
         }
 
         getUsableItems(items: Array<Item> = this.getAllItems()): Array<Item> {
-            return items.filter(obj => obj.usableInBattle === true)
+            return items.filter(obj => obj.usable >= 0)
         }
 
         hasUsableItems(): boolean {
@@ -247,7 +284,7 @@ export namespace Objects {
         }
         
         async selectSkill(list: Array<Skill|Item>, action: Action): Promise<void> {      
-            let id = list[0].id
+            let id = list[0].skillID()
             if(!this.isBasicCommand(list) || this.isItem(list)){
                 let items = this.createSkillSelectItems(list)
                 let options = {
@@ -293,7 +330,7 @@ export namespace Objects {
             await this.selectSkill(list, action): await this.selectCommand(action): null;
             
             let index = result.selectedIndex;
-            if(index != undefined) action.setTargets([this.getOpponents()[index]])         
+            if(index != undefined) action.setTargets([targets[index].entityID])         
         }
 
         getScopeTargets(action: Action): Array<Battler> {
@@ -321,6 +358,8 @@ export namespace Objects {
         async makeAction(): Promise<Action> {
             let action = new Action(this) 
             console.log(this.makeTargetRatings())
+            action.setTargets([this.getOpponents()[0].entityID])
+            action.setSkillId(1)
             return action
         }
 
@@ -354,67 +393,32 @@ export namespace Objects {
     }
 
     export class Action {
-        private _user: Battler
+        private _user: number = 0
         private _skillId: number = 0
-        private _targets: Array<Battler> = []
+        private _targets: Array<number> = []
 
         constructor(user: Battler) {
-            this._user = user        
+            this._user = user.entityID      
         }
 
         skill(): Skill {
-            let skill = Data.getAllSkills()[this._skillId]
-            if(skill instanceof Item) return skill.skill;
-            return skill
+            return Data.getAllSkills()[this._skillId]
         };
 
         user(): Battler {
-            return this._user;
+            return Game.getEntityFromID(this._user);
         }
   
-        async getTargets(): Promise<any> {
-            let possibleTargetsNames: Array<string> = this.getPossibleTargets().map(target => target.name)
-            let targets = await this.openTargetSelection(possibleTargetsNames) 
-            //console.log(targets[0].isAliv;
-            if(targets){
-                if(targets[0].isAlive()) return targets;
-                return await this.getTargets()
-            }         
-        }
-
         setSkillId(id: number): void {
             this._skillId = id
         }
 
-        setTargets(targets: Array<Battler>): void {
+        setTargets(targets: Array<number>): void {
            this._targets = targets;      
         }
 
-        getPossibleTargets(): Array<Battler> {
-            switch (this.skill().scope) {
-                //FIXME only 2 for testing
-                case 0:
-                    return [this._user]
-                    break;
-                
-                default:
-                    return this._user.getOpponents()
-                    break;
-            }
-        }
-
-        async openTargetSelection(names: Array<string>): Promise<Array<Battler>> {
-            //FIXME only single selection atm
-            let name = await Graphics.gridMenu(names).promise;
-            return [this.getPossibleTargets()[name.selectedIndex]]
-        }
-
-        async targetIsValid(): Promise<boolean> {
-           return this._targets[0].isAlive() == true
-        }
-
         perform(): void {
-            let user = this._user
+            let user = this.user()
             user.setState(this.skill().state)
             user.setQt(this.skill().rt)  
             this.applySkillCosts()  
@@ -423,10 +427,10 @@ export namespace Objects {
             if(this.isDamageAbility()){
                 let targetCount = this._targets.length
                 for (let i = 0; i < targetCount; i++) {
-                    let target = this._targets[i]
-                    let critical = this.isCriticalHit() 
-                    let result: number = this.evalSkillFormular(user, target);      
-                    result *= this.getDamageVariance();  
+                    let target = Game.getEntityFromID(this._targets[i])
+                    let critical = this.isCriticalHit()              
+                    let result: number = this.evalSkillFormular(user, target);                          
+                    result *= this.getDamageVariance();                   
                     critical ? result *= 1.5 : null;
                     if(target.isGuarding() && this.skill().isPhysical()) result *= 0.5; 
                     result = Math.round(result);
@@ -441,24 +445,24 @@ export namespace Objects {
         }
 
         isDamageAbility(): boolean {
-           return this.skill().damage.type !== 0
+           return this.skill().damage.formular ? true: false
         }
 
         applyDamage(target: Battler, damage: number, crit: boolean = false): void {
-            target.setHp(target.hp - damage)
+            target.setHp(target.hp + damage)
             this.makeDamageMessage(target, damage, crit)
             target.updateDead()
         }
 
         makeDamageMessage(target: Battler, dmg: number, crit: boolean = false): void {
-            let usr = '^G' + this._user.name
+            let usr = '^G' + this.user().name
             let trg = '^R' + target.name
             let cri = (crit)? '^Ycritcal^ ': '';
             Graphics(`\n${usr}^ deals ${cri}^W${dmg}^ Damage to ${trg}^`).nextLine(1)
         }
 
         evalSkillFormular(a?: Battler, b?: Battler): number {
-            return eval(this.skill().damage.formular)
+            return this.skill().damage.formular ? eval(this.skill().damage.formular): 0
         }
 
         applySkillCosts(): void {
@@ -470,16 +474,18 @@ export namespace Objects {
         }
 
         getDamageVariance(): number {
-           let int = this.skill().damage.variance
+           let int = this.skill().damage.variance || 0;
            return Random.int(-int, int)/100 + 1;
         }
     }
 
     interface _damage {
-        type: number
+        type?: number
         formular: string
-        element: number
-        variance: number
+        element?: number
+        variance?: number
+        critical?: boolean
+        critBase?: number
     }
 
     export interface _dataSkill {
@@ -492,25 +498,43 @@ export namespace Objects {
         costType?: string
         tooltip?: string
         state?: string
+        cooldown?: number
+        effects?: any
+        message?: string
     }
 
     export class Skill {
         id: number = 0
         type: string = ''
         name: string = ''
-        damage: _damage = {type: 0, formular: '', element: 0, variance: 0}
+        damage: _damage = {type: 0, formular: '', element: 0, variance: 0, critical: false, critBase: 0}
         rt: number = 0
         scope: number = 0
         cost: number = 0
         costType: string = ''
         tooltip: string = ''
         state: string = ''
+        cooldown: number = 0
+        private _remainingCooldown: number = 0
+        effects: any = {}
+        message: string = ''
 
         constructor(id: number, data: _dataSkill){
             this.id = id
+            this.damage.formular = ''
+
             for (let key in data) {
-                //@ts-ignore
-                this[key] = data[key]
+
+                if(key === 'damage'){
+                    for (let dkey in data[key]) {
+                        //@ts-ignore
+                        this[key][dkey] = data[key][dkey]
+                    }
+                }
+                else {
+                    //@ts-ignore
+                    this[key] = data[key]
+                }    
             }
         }
 
@@ -522,38 +546,42 @@ export namespace Objects {
             return this.damage.type === Data.Config.damageTypes.magical
         }
 
+        isDamage(result: number): boolean {
+            return result > 0;
+        }
+
         skillID(): number {
             return Data.getAllSkills().indexOf(this)
         }
     }
-
-    export interface _dataItem {
-        name?: string, 
+    
+    export interface _dataItem extends _dataSkill {
         consumable?: boolean,
-        usableInBattle?: boolean ,
-        maxSize?: number,
-        skill?: _dataSkill
+        useable?: number ,
+        stacksize?: number,
     }
 
-    export class Item {
-        id: number = 0
-        name: string = ''
-        consumable: boolean = false
-        usableInBattle: boolean = false
-        maxSize: number = 0
-        skill: Skill = <Skill>{}
+    export interface _dataEquip extends _dataItem {
+        stats?: any 
+        requirements?: any
+    }
 
+    export class Item extends Skill { 
+        consumable: boolean = false
+        //usable: undefined = never, 0 = everywhere, 1 = in battle, -1 = not in battle
+        usable: number = 0
+        stacksize: number = 1
         constructor(id: number, data: _dataItem) {
-            this.id = id;
-            for (let key in data) {
+            super(id, data)
+            for (const key in data) {
                 //@ts-ignore
-                key !== 'skill' ? this[key] = data[key]: this.skill = new Skill(0, data.skill || {})
+                this[key] = data[key]
             }
         }
+    }
 
-        skillID(): number {
-            return Data.getAllSkills().indexOf(this)
-        }
+    export class Equip extends Item { 
+        
     }
 }
 

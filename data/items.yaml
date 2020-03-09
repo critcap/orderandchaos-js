@@ -1,18 +1,17 @@
 ---
 - name: 'Potion'
   consumable: true
-  usableInBattle: true
-  maxSize: 99
-  skill:
-    type: ''
-    damage: 
-      type: 0
-      formular: ''
-      element: 0
-      variance: 10
-    rt: 25
-    scope: 0
-    cost: 0
-    costType: ''
-    tooltip: ''
-    state: 'use'  
+  usable: 0
+  stacksize: 99
+  type: ''
+  damage: 
+    type: 0
+    formular: 'b.mhp * 0.2'
+    element: 0
+    variance: 10
+  rt: 25
+  scope: 0
+  cost: 0
+  costType: ''
+  tooltip: ''
+  state: 'use'  

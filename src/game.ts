@@ -21,7 +21,8 @@ Graphics.on('key', (name:any, data:any) => {
             break;
         case "#":
             //Graphics.eraseLine().previousLine(1).eraseLine()
-            BattleLog.getAllTurns().forEach(turn => console.log(turn))
+            Battle.showTurnQueue()
+           
             break;
         default:     
             break;
@@ -44,9 +45,8 @@ export class Game {
     static async run(): Promise<void> {
         Graphics.clear() 
         await Data.loadDatabases()    
-        let hero = this.startCharacterCreation()
-        let enemy = this.createEncounter()   
-        await Promise.all([hero, enemy])
+        await this.startCharacterCreation()
+        await this.createEncounter()   
         Battle.setup()  
         this.requestUpdate()       
     }
@@ -58,6 +58,7 @@ export class Game {
                     Battle.updateTurn()
                 }
             } catch (error) {
+                console.log(error);         
                 Game.shutdown()        
             }
         }
@@ -120,6 +121,15 @@ export class Game {
     static isStopped(): boolean {
         if(this.isWaiting()) return true;
         return false;
+    }
+
+    static getAllEntities(): Array<Objects.Battler> {
+        //@ts-ignore
+        return this.Heroes.concat(this.Enemies)
+    }
+
+    static getEntityFromID(id: number): Objects.Battler {
+        return this.getAllEntities()[id]
     }
    
     static shutdown(): void {

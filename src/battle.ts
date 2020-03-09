@@ -79,13 +79,29 @@ export class Battle {
         return this._subject
     }
 
-    static setNextSubject(): void {
-        let allBattler = this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
-        let nextBattler = allBattler[0]
-        this.getAllBattlersAlive().forEach(battler =>{
-            battler.updateCurrentQt(-nextBattler.qt)
+    static showTurnQueue(): void {
+        let all = this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
+        all.forEach(battler => {
+            console.log(`${battler.name}: ${battler.qt}`);
+            
         })
-        nextBattler.updateCurrentQt((nextBattler.qt + 1) * -1)
+    }
+
+    static getTurnQueue(): Array<Battler> {
+        return this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
+    }
+
+    static setNextSubject(): void {
+        let allBattler = this.getTurnQueue()
+        let nextBattler = allBattler[0]    
+        this.getTurnQueue().forEach(battler => console.log(battler.name,battler.qt);
+        )
+            
+        this.getTurnQueue().forEach(battler =>{
+            battler === nextBattler ? null : battler.updateCurrentQt(-nextBattler.qt)
+        })
+        nextBattler.setQtAbsolut(-1)
+        this.getTurnQueue().forEach(battler => console.log(battler.name,battler.qt))
         nextBattler.setState('select');
         this._subject = nextBattler
     }
@@ -183,12 +199,11 @@ export class Battle {
         this._actionStack = actions
     }
 
-    static processActionStack(): void {
+    static async processActionStack(): Promise<void> {
         if(this._actionStack.length > 0) {
             this._actionStack[0].perform()
             this._actionStack.pop()
-            
-            Game.requestWait(1000)
+            Game.requestWait(4000)
         }
         else if(this._actionStack.length === 0) {
             this._status = 'TurnEnd'
@@ -205,6 +220,7 @@ export class Battle {
     static endTurn(): void {
         if(!this.subject().isGuarding) this.subject().setState('wait');
         this.setNextSubject()
+        this.waitForInput()
         this._status = 'TurnStart'
     }
 
@@ -229,6 +245,10 @@ export class Battle {
         Graphics('\n^WYOUR TEAM WAS^ ^RDEFEATED^')
         this._status = 'BattleEnd'
         
+    }
+
+    static async waitForInput(): Promise<void> {
+        return await Graphics.inputField().promise
     }
 
     static close(): void {

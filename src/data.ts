@@ -25,6 +25,7 @@ export class Data {
     static Config: _config;
     static Skills: Array<Objects.Skill> = []
     static Items: Array<Objects.Item> = []
+    static Equip: Array<Objects.Equip> = []
 
 
     static async loadDatabases(): Promise<any> {
@@ -48,6 +49,10 @@ export class Data {
         this.processDataItems(items)
     }
 
+    static async loadDataEquip(): Promise<void> {
+        let equip = await this.loadDataFile('equip')
+    }
+
     static async loadDataNames(): Promise<any> {
         return this.loadDataFile('names')
     }
@@ -55,7 +60,7 @@ export class Data {
     static async fetchNames(count: number, type: string): Promise<Array<string>> {
         let names = await this.loadDataNames()
         let nameIndex: Array<number> = []
-        while (nameIndex.length < count) {
+        while (nameIndex.length <= count) {
             let rnd = Random.int(0, names[type].length - 1) 
             nameIndex.push(nameIndex.includes(rnd) ? null : rnd)
         }
@@ -66,8 +71,24 @@ export class Data {
         this.Items = data.map(obj => new Objects.Item(data.indexOf(obj), obj))
     }
 
+    static processDataEquip(data: Array<Objects.Equip>): void {
+        this.Equip = data.map(obj => new Objects.Equip(data.indexOf(obj), obj))
+    }
+
     static getItem(ItemID: number): Objects.Item {
         return this.Items[ItemID]
+    }
+
+    static getEquip(EquipID: number): Objects.Equip {
+        return this.Equip[EquipID]
+    }
+
+    static getItemSkills(): Array<Objects.Item> {
+        return this.Items.filter(obj => obj.usable >= 0)
+    }
+
+    static getEquipSkills(): Array<Objects.Equip> {
+        return this.Equip.filter(obj => obj.usable >= 0)
     }
 
     static getSkill(SkillID: number): Objects.Skill {
@@ -75,8 +96,7 @@ export class Data {
     }
 
     static getAllSkills(): Array<any> {
-        //@ts-ignore
-        return this.Skills.concat(this.Items)
+        return this.Skills.concat(this.getItemSkills()).concat(this.getEquipSkills())
     }
 
     static processDataSkills(data: Array<Objects._dataSkill>): void {
