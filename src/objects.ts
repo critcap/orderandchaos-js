@@ -137,7 +137,6 @@ export namespace Objects {
         setQt(value: number): void {
             let wei = Random.int(200, 250)
             this._qt = wei + value
-
         }
 
         setQtAbsolut(value: number): void {

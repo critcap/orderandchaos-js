@@ -82,28 +82,24 @@ export class Battle {
     static showTurnQueue(): void {
         let all = this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
         all.forEach(battler => {
-            console.log(`${battler.name}: ${battler.qt}`);
-            
+            console.log(`${battler.name}: ${battler.qt}`);          
         })
     }
 
-    static getTurnQueue(): Array<Battler> {
+    static getTurnQueue(): Array<Objects.Battler> {
         return this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
     }
 
     static setNextSubject(): void {
-        let allBattler = this.getTurnQueue()
-        let nextBattler = allBattler[0]    
-        this.getTurnQueue().forEach(battler => console.log(battler.name,battler.qt);
-        )
-            
-        this.getTurnQueue().forEach(battler =>{
-            battler === nextBattler ? null : battler.updateCurrentQt(-nextBattler.qt)
-        })
-        nextBattler.setQtAbsolut(-1)
-        this.getTurnQueue().forEach(battler => console.log(battler.name,battler.qt))
-        nextBattler.setState('select');
-        this._subject = nextBattler
+        let newSubject = this.getTurnQueue()[0]
+        this.updateBattlerQTs(newSubject.qt)     
+        newSubject.setQtAbsolut(-1)
+        newSubject.setState('select');
+        this._subject = newSubject
+    }
+
+    static updateBattlerQTs(value: number): void {
+        this.getTurnQueue().forEach(battler => battler.updateCurrentQt(-value))
     }
 
     static updateTurn(): void {
