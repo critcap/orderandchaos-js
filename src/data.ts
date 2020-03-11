@@ -62,7 +62,7 @@ export class Data {
         let nameIndex: Array<number> = []
         while (nameIndex.length <= count) {
             let rnd = Random.int(0, names[type].length - 1) 
-            nameIndex.push(nameIndex.includes(rnd) ? null : rnd)
+            if(nameIndex.includes(rnd) === false )nameIndex.push(rnd)
         }
         return nameIndex.map(index => names[type][index])
     }

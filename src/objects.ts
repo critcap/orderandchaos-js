@@ -1,9 +1,10 @@
-import { Game, Graphics } from "./game"
+import { Game} from "./game"
 import { Battle } from "./battle"
 import { Utils } from "./game"
 import { Random } from "./game"
 import { Data } from "./data"
 import { BattleLog } from "./battlelog"
+import {Graphics} from './graphics'
 import { isDeepStrictEqual } from "util"
 import { stringify } from "querystring"
 
@@ -24,6 +25,7 @@ export namespace Objects {
         id: number = 0
         entityID: number = 0
         name: string = ''
+        _inventory: any = {}
         
         protected _state: string = ''
         protected _vit: number = 0 
@@ -31,7 +33,6 @@ export namespace Objects {
         protected _dex: number = 0
         protected _int: number = 0
         protected _fth: number = 0
-        protected _wei: number = 0
 
         protected _hp: number = 0
         protected _mp: number = 0
@@ -73,7 +74,6 @@ export namespace Objects {
 
         setName(input: string): void {
             this.name = input
-            Graphics(`\nYour name is ${this.name}`)
         }
 
         isAttacking(): boolean {
@@ -104,13 +104,12 @@ export namespace Objects {
             this._state = state
         }
     
-        async setAttributes(): Promise<void> {
+        setAttributes(): void {
             this._vit = Random.int(2, 8)
             this._str = Random.int(2, 8)
             this._dex = Random.int(2, 8)
             this._int = Random.int(2, 8)
             this._fth = Random.int(2, 8)
-            this._wei = 20
         }
 
         getAllAttributes(): Array<number> {
@@ -119,11 +118,6 @@ export namespace Objects {
 
         getAllStats(): Array<number> {
             return [this.mhp,this.hp,this.mmp,this.mp,this.wdmg,this.mdmg,this.qt]
-        }
-
-        //NOTE Mockups
-        getWeight(): number {
-            return this._wei * (this._str/100)
         }
 
         setHp(value: number): void {
@@ -145,7 +139,7 @@ export namespace Objects {
 
         revive(): void {
             this._hp = 1;
-            this._qt = this.getWeight()
+            this.setQt(0)
         }
 
         updateCurrentQt(value: number): void {
@@ -156,7 +150,7 @@ export namespace Objects {
             if(!this.isAlive()){
                 this._hp = 0
                 this._qt = 0
-                Graphics(`\n^W${this.name}^ died!`)
+                Graphics.makeDeathMessage(this)    
                 //break casting
                 //remove buffs debuffs
             }
@@ -190,14 +184,6 @@ export namespace Objects {
         spellIDs(): Array<number> {
             return this.spells().map(skill => skill.id)
         }
-
-
-    }
-
-    export class Hero extends Battler {
-        private _exp?: number
-        private _level?: number  
-        private _inventory: any = {}
 
         async gainItems(itemID: number, count: number): Promise<void> {
             let item = Data.getItem(itemID);
@@ -244,6 +230,13 @@ export namespace Objects {
             return this.spells().length > 0;
         }
 
+    }
+
+    export class Hero extends Battler {
+        private _exp?: number
+        private _level?: number  
+        
+
         async makeAction(): Promise<Action> {
             let action = new Action(this)
             await this.selectCommand(action)   
@@ -251,15 +244,14 @@ export namespace Objects {
         }
 
         async selectCommand(action: Action): Promise<void> {
-            let commands = this.getCommands()
-            let options = {}
-            let command = await Graphics.singleLineMenu(commands, options).promise
+            let commands = this.getCommands()    
+            let command = await Graphics.makeCommandSelection(commands)
             let skill = this.getSkillsFromCommand(command.selectedText)
             await this.selectSkill(skill, action)       
         }
         
         getCommands(): Array<string> {
-            let commands = [Graphics.str('Attack')]
+            let commands = ['Attack']
             this.hasUsableSpells() ? commands.push('Spells'): null; 
             this.hasUsableItems() ? commands.push('Items'): null;
             commands.push('Guard');            
@@ -285,17 +277,11 @@ export namespace Objects {
         async selectSkill(list: Array<Skill|Item>, action: Action): Promise<void> {      
             let id = list[0].skillID()
             if(!this.isBasicCommand(list) || this.isItem(list)){
-                let items = this.createSkillSelectItems(list)
-                let options = {
-                    cancelable: true,
-                    itemMaxWidth: Graphics.width / 2
-                }
-                let result = await Graphics.gridMenu(items, options).promise
+                let result = await Graphics.makeSkillSelection(list, this);
                 result.selectedIndex != undefined ? id =list[result.selectedIndex].skillID(): 
                 result.canceled === true ? await this.selectCommand(action): null;
             }    
             action.setSkillId(id)
-
             await this.selectTarget(list, action); 
         }
 
@@ -307,27 +293,12 @@ export namespace Objects {
             return list[0] instanceof Item
         }
 
-        createSkillSelectItems(list: Array<Skill|Item>): Array<string> {
-            return list.map(obj => {
-                let extra = obj instanceof Item ? ` #:^g${this._inventory[obj.id]}^`: ` MP:${obj.cost}`
-                return Graphics.str(`^b${obj.name}^`+extra)
-            })
-        }
-
-        async selectTarget(list: Array<Skill|Item>, action: Action): Promise<void> {
-            
-            let targets = this.getScopeTargets(action)
-            let targetNames = this.createTargetSelectItems(targets)
-            
-            let options = {
-                cancelable: true, 
-                selectedStyle: Graphics.bgDefaultColor()
-            }
-            
-            let result = await Graphics.singleColumnMenu(targetNames, options).promise;
+        async selectTarget(list: Array<Skill|Item>, action: Action): Promise<void> {        
+            let targets = this.getScopeTargets(action) 
+            let result = await Graphics.makeTargetSelection(targets)
             result.canceled == true    ?    !this.isBasicCommand(list) || this.isItem(list) ? 
             await this.selectSkill(list, action): await this.selectCommand(action): null;
-            
+
             let index = result.selectedIndex;
             if(index != undefined) action.setTargets([targets[index].entityID])         
         }
@@ -337,16 +308,6 @@ export namespace Objects {
                     Math.sign(action.skill().scope) > 0 ? action.user().getOpponents():
                     [action.user()];
         }
-
-        createTargetSelectItems(list: Array<Battler>): Array<string> {
-            return list.map(target => {
-                return (target.isAlive() == true) ? 
-                Graphics.str(`${target.name} HP: ^g${target.hp}^`):
-                Graphics.str(`${target.name} ^rDEAD^`);
-            })
-        }
-
-
     }
     
     export class Enemy extends Battler {
@@ -449,15 +410,8 @@ export namespace Objects {
 
         applyDamage(target: Battler, damage: number, crit: boolean = false): void {
             target.setHp(target.hp + damage)
-            this.makeDamageMessage(target, damage, crit)
+            Graphics.makeDamageMessage(this.user(), target, damage, crit)
             target.updateDead()
-        }
-
-        makeDamageMessage(target: Battler, dmg: number, crit: boolean = false): void {
-            let usr = '^G' + this.user().name
-            let trg = '^R' + target.name
-            let cri = (crit)? '^Ycritcal^ ': '';
-            Graphics(`\n${usr}^ deals ${cri}^W${dmg}^ Damage to ${trg}^`).nextLine(1)
         }
 
         evalSkillFormular(a?: Battler, b?: Battler): number {

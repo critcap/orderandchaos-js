@@ -3,6 +3,7 @@ import {Scenes} from './scenes';
 import {Battle} from './battle'
 import {Data} from './data'
 import { BattleLog } from './battlelog';
+import {Terminal, Graphics} from './graphics'
 
 export class Utils{
     static clamp(input: number, min: number, max: number): number{
@@ -11,24 +12,6 @@ export class Utils{
 }
 
 export const Random = require('random')
-
-export const Graphics = require('terminal-kit').terminal
-Graphics.grabInput(true)
-Graphics.on('key', (name:any, data:any) => {
-    switch (name) {
-        case "z":
-            Game.shutdown()
-            break;
-        case "#":
-            //Graphics.eraseLine().previousLine(1).eraseLine()
-            Battle.showTurnQueue()
-           
-            break;
-        default:     
-            break;
-    }
-}) 
-
 
 export const PARTY_SIZE: number = 3;
 const TICK_RATE: number = 20;
@@ -43,7 +26,7 @@ export class Game {
     static Enemies: Array<Objects.Enemy> = []
 
     static async run(): Promise<void> {
-        Graphics.clear() 
+        Terminal.clear() 
         await Data.loadDatabases()    
         await this.startCharacterCreation()
         await this.createEncounter()   
@@ -69,13 +52,11 @@ export class Game {
         for (let i = 0; i < PARTY_SIZE; i++) {
             try {
                 let Hero = new Objects.Hero()
-                let name = await Graphics.inputField({default: names[i]}).promise
-                Hero.setName(name)
-                Graphics.nextLine(1)
-                await Hero.setAttributes()
-                Graphics.nextLine(1)
+                Hero.setAttributes()
                 Hero.recoverAll()
                 Hero.gainItems(0, 99)
+                let name = await Graphics.makeNameInput(names[i])
+                Hero.setName(name)
                 this.Heroes.push(Hero)
             } catch (error) {
                console.log(error);
@@ -133,6 +114,6 @@ export class Game {
     }
    
     static shutdown(): void {
-        Graphics.processExit()
+        Terminal.processExit()
     }
 }

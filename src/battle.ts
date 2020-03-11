@@ -1,13 +1,14 @@
 import {Game} from './game'
 import {Objects} from './objects'
-import {Graphics} from './game'
+import {Graphics} from './graphics'
+import {Terminal} from './graphics'
 import {PARTY_SIZE} from './game'
 import { BattleLog } from "./battlelog"
 
 export class Battle {
     private static _status: string = ''
     private static _turnCount: number = 0
-    private static _subject: Objects.Battler
+    private static _subject: number = -1
     private static _actionStack: Array<Objects.Action> = []
 
     static get active(): Objects.Battler {return this.subject() }
@@ -31,7 +32,7 @@ export class Battle {
     }
 
     static Start(): void {
-        console.log('Battle Commences');
+        Graphics.onBattleStart()
         this._status = 'Start'
     }
 
@@ -74,16 +75,9 @@ export class Battle {
     static subject(): Objects.Battler {
         if(!this._subject){
             this.setNextSubject()
-            return this._subject
+            return Game.getEntityFromID(this._subject)
         }
-        return this._subject
-    }
-
-    static showTurnQueue(): void {
-        let all = this.getAllBattlersAlive().sort((a, b) => a.qt - b.qt)
-        all.forEach(battler => {
-            console.log(`${battler.name}: ${battler.qt}`);          
-        })
+        return Game.getEntityFromID(this._subject)
     }
 
     static getTurnQueue(): Array<Objects.Battler> {
@@ -95,7 +89,7 @@ export class Battle {
         this.updateBattlerQTs(newSubject.qt)     
         newSubject.setQtAbsolut(-1)
         newSubject.setState('select');
-        this._subject = newSubject
+        this._subject = newSubject.entityID
     }
 
     static updateBattlerQTs(value: number): void {
@@ -160,18 +154,17 @@ export class Battle {
         this.refreshAllQt()
         this.getAllBattlersAlive().forEach(battler => {
             battler.setState('wait')            
-        })
+        });
         this.setNextSubject()
-        //on Start effects
-        //on Start events
+        //on Start effects;
+        //on Start events;
         this._status = 'TurnStart'
-    }
+    };
 
     static onTurnStart(): void {
-        Graphics.clear()
+        Terminal.clear()
         BattleLog.onTurnStart()
-        Graphics(`\nIts ${this.subject().name}'s turn`);
-        Graphics(`\n${this.active.name}|HP: ${this.active.hp}/${this.active.mhp}|MP: ${this.active.mp}/${this.active.mmp}`);
+        Graphics.makeStatusBar(this.subject())
         //buff debuffs
         //death check
         //check AP
@@ -187,6 +180,7 @@ export class Battle {
         } catch (error) {
             console.log(error);
             Game.shutdown()
+            return
         }  
     }    
 
@@ -216,7 +210,6 @@ export class Battle {
     static endTurn(): void {
         if(!this.subject().isGuarding) this.subject().setState('wait');
         this.setNextSubject()
-        this.waitForInput()
         this._status = 'TurnStart'
     }
 
@@ -230,21 +223,17 @@ export class Battle {
     static processVictory(): void {
         //remove all buffs and statuses
         //gain exp
-        //gain items
-        Graphics('\n^WYOUR TEAM WAS^ ^GVICTORIOUS^')
+        Graphics.makeVictoryMessage()
+        
         this._status = 'BattleEnd'
     }
     static processDefeat(): void {
         //remove all buffs and statuses
         //gain exp
-        //gain items
-        Graphics('\n^WYOUR TEAM WAS^ ^RDEFEATED^')
+        Graphics.makeDefeatMessage()
+        
         this._status = 'BattleEnd'
         
-    }
-
-    static async waitForInput(): Promise<void> {
-        return await Graphics.inputField().promise
     }
 
     static close(): void {
