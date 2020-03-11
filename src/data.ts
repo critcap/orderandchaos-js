@@ -32,7 +32,8 @@ export class Data {
         await this.loadConfigData()
         let skills = this.loadDataSkills()
         let items = this.loadDataItems()
-        return Promise.all([skills, items])
+        let equip = this.loadDataEquip()
+        return Promise.all([skills, items, equip])
     }
 
     static async loadConfigData(): Promise<void> {
@@ -74,6 +75,10 @@ export class Data {
     static processDataEquip(data: Array<Objects.Equip>): void {
         this.Equip = data.map(obj => new Objects.Equip(data.indexOf(obj), obj))
     }
+  
+    static processDataSkills(data: Array<Objects._dataSkill>): void {
+        this.Skills = data.map(obj => new Objects.Skill(data.indexOf(obj), obj))
+    }
 
     static getItem(ItemID: number): Objects.Item {
         return this.Items[ItemID]
@@ -81,6 +86,10 @@ export class Data {
 
     static getEquip(EquipID: number): Objects.Equip {
         return this.Equip[EquipID]
+    }
+
+    static getSkill(SkillID: number): Objects.Skill {
+        return this.Skills[SkillID]
     }
 
     static getItemSkills(): Array<Objects.Item> {
@@ -91,17 +100,10 @@ export class Data {
         return this.Equip.filter(obj => obj.usable >= 0)
     }
 
-    static getSkill(SkillID: number): Objects.Skill {
-        return this.Skills[SkillID]
-    }
-
     static getAllSkills(): Array<any> {
         return this.Skills.concat(this.getItemSkills()).concat(this.getEquipSkills())
     }
 
-    static processDataSkills(data: Array<Objects._dataSkill>): void {
-        this.Skills = data.map(obj => new Objects.Skill(data.indexOf(obj), obj))
-    }
 
     static async loadDataFile(file: string, encoding: string = 'utf8'): Promise<any> {
         let path = this.getDataFilePath(file)

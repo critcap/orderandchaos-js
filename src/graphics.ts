@@ -26,7 +26,7 @@ export class Graphics {
     private static _healColor: string = 'G'
 
     static get spc(): string {return '||'}
-    static get crit(): string {return `^${this._critColor}critically^`}
+    static get crit(): string {return `^${this._critColor}critically^ `}
 
     static formatHP(battler: Objects.Battler): string {
         return `^${this._hpColor}${battler.hp}/${battler.mhp}^`
@@ -40,7 +40,7 @@ export class Graphics {
     }
 
     static formatDmg(damage: number): string {
-        return this.isHPDamage(damage) ? `^${this._dmgColor}${damage}` : `^${this._healColor}${damage}`
+        return this.isHPDamage(damage) ? `^${this._dmgColor}${Math.abs(damage)}^` : `^${this._healColor}${damage}^`
     }
 
     static makeStatusBar(battler: Objects.Battler): void {
@@ -63,7 +63,7 @@ export class Graphics {
     }
 
     static async makeCommandSelection(items: Array<string>): Promise<any> {
-        let options = {}
+        let options = {selectedStyle: Terminal.dim.black.bgYellow}
         return Terminal.singleLineMenu(items, options).promise
     }
 
@@ -105,7 +105,7 @@ export class Graphics {
         let tar = this.formatName(target);
         let dmg = this.formatDmg(damage);
         let cri = crit === true ? this.crit : ''
-        let text = this.isHPDamage(damage) ? `${cri} deals ${dmg} Damage`: `${cri} restores ${dmg} Life`;
+        let text = this.isHPDamage(damage) ? `${cri}deals ${dmg} Damage`: `${cri} restores ${dmg} Life`;
         Terminal(`${sub} ${text} to ${tar}`).nextLine(1)
 
     }
